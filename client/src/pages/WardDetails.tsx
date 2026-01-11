@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { delhiWards, getWardStatus, getRiskLevel, generateTrendData, actionHistory, citizenComplaints, WardData } from "@/data/mockData";
+import { getWardStatus, getRiskLevel, generateTrendData } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { delhiWards, actionHistory as mockHistory, citizenComplaints as mockComplaints } from "@/data/mockData";
 
 interface RouteInfo {
   id: string;
@@ -22,7 +24,7 @@ interface RouteInfo {
   lastSprinkled: string | null;
 }
 
-const generateRoutesForWard = (ward: WardData): RouteInfo[] => {
+const generateRoutesForWard = (ward: any): RouteInfo[] => {
   const routes: RouteInfo[] = [];
   const routeNames = ["Main Street", "Highway Connector", "Industrial Road", "Market Lane", "Residential Block A", "Commercial Zone", "School Road", "Hospital Road", "Ring Road Section", "Metro Station Road", "Bus Depot Road", "Park Avenue", "Temple Street", "Bridge Approach", "Flyover Section", "Construction Zone"];
   for (let i = 0; i < ward.routesCount; i++) {
@@ -43,19 +45,28 @@ function StatusBadge({ status }: { status: "good" | "moderate" | "poor" | "criti
 export default function WardDetails() {
   const params = useParams();
   const wardId = params.wardId as string;
-  const ward = delhiWards.find(w => w.id === wardId);
+
+  const { data: apiWards = [] } = useQuery<any[]>({ queryKey: ["/api/wards"] });
+  const { data: apiHistory = [] } = useQuery<any[]>({ queryKey: ["/api/actions/history"] });
+  const { data: apiComplaints = [] } = useQuery<any[]>({ queryKey: ["/api/complaints"] });
+
+  const wards = apiWards.length > 0 ? apiWards : delhiWards;
+  const history = apiHistory.length > 0 ? apiHistory : mockHistory;
+  const complaints = apiComplaints.length > 0 ? apiComplaints : mockComplaints;
+
+  const ward = wards.find((w: any) => w.id === wardId);
 
   const trendData = useMemo(() => ward ? generateTrendData(ward.id) : [], [ward]);
   const routes = useMemo(() => ward ? generateRoutesForWard(ward) : [], [ward]);
-  const wardHistory = useMemo(() => ward ? actionHistory.filter(a => a.ward === ward.name) : [], [ward]);
-  const wardComplaints = useMemo(() => ward ? citizenComplaints.filter(c => c.ward === ward.name) : [], [ward]);
+  const wardHistory = useMemo(() => ward ? history.filter((a: any) => a.ward === ward.name) : [], [ward, history]);
+  const wardComplaints = useMemo(() => ward ? complaints.filter((c: any) => c.ward === ward.name) : [], [ward, complaints]);
 
   if (!ward) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-display font-bold mb-2">Ward Not Found</h1>
-          <p className="text-muted-foreground mb-4">The ward you're looking for doesn't exist.</p>
+          <h1 className="text-2xl font-display font-bold mb-2">Loading...</h1>
+          <p className="text-muted-foreground mb-4">Fetching ward details...</p>
           <Link href="/"><Button><ArrowLeft className="w-4 h-4 mr-2" />Back to Dashboard</Button></Link>
         </div>
       </div>
@@ -130,8 +141,8 @@ export default function WardDetails() {
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="pm10Grad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
-                      <linearGradient id="pm25Grad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/><stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/></linearGradient>
+                      <linearGradient id="pm10Grad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} /><stop offset="95%" stopColor="#ef4444" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="pm25Grad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                     <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#9ca3af" />
