@@ -1,33 +1,12 @@
-import { useState } from "react";
-import { MapContainer, TileLayer, Polygon, Popup, Polyline } from "react-leaflet";
+import { useState, useMemo } from "react";
+import { MapContainer, TileLayer, Polygon, Popup, CircleMarker } from "react-leaflet";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, AreaChart, Area } from "recharts";
 import {
-  Droplets,
-  Wind,
-  Thermometer,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  TrendingDown,
-  TrendingUp,
-  X,
-  ChevronRight,
-  Sun,
-  Sunset,
-  Moon,
-  Building2,
-  Truck,
-  MapPin,
-  Activity,
-  Target,
-  Gauge,
-  ArrowUpRight,
-  ArrowDownRight,
-  Zap,
-  Route,
-  CircleDot,
-  ExternalLink,
+  Droplets, Wind, Thermometer, AlertTriangle, CheckCircle2, Clock, TrendingDown, TrendingUp, X, ChevronRight, ChevronDown,
+  Building2, Truck, MapPin, Activity, Target, Gauge, ArrowUpRight, ArrowDownRight, Zap, ExternalLink, Filter,
+  MessageSquare, History, Lightbulb, Radio, Users, FileText, CircleDot, Play, CheckCircle, XCircle, Search
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,248 +14,227 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { delhiWards, getWardStatus, WardData } from "@/data/delhiWards";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import {
+  delhiWards, getWardStatus, getRiskLevel, generateTrendData, hotspots, actionRecommendations, actionHistory, citizenComplaints,
+  WardData, Hotspot, ActionRecommendation, ActionHistory, CitizenComplaint
+} from "@/data/mockData";
 import "leaflet/dist/leaflet.css";
 
 type StatusLevel = "good" | "moderate" | "poor" | "critical";
-type TimeSlot = "morning" | "evening" | "night";
 
-interface ActionPlan {
-  slot: TimeSlot;
-  routes: { id: string; name: string; priority: "high" | "medium" | "low"; reason: string; }[];
-}
-
-const mockActionPlans: ActionPlan[] = [
-  {
-    slot: "morning",
-    routes: [
-      { id: "r1", name: "Shahdara Main Road", priority: "high", reason: "PM10 at 289 µg/m³" },
-      { id: "r5", name: "North East Highway", priority: "high", reason: "PM10 at 245 µg/m³" },
-      { id: "r2", name: "East Industrial Belt", priority: "medium", reason: "Needs re-sprinkle" },
-    ],
-  },
-  {
-    slot: "evening",
-    routes: [
-      { id: "r2", name: "Central Market Road", priority: "high", reason: "Expected PM spike" },
-      { id: "r3", name: "North Construction Zone", priority: "medium", reason: "Preventive action" },
-    ],
-  },
-  {
-    slot: "night",
-    routes: [
-      { id: "r1", name: "South Residential Area", priority: "medium", reason: "Overnight settlement" },
-    ],
-  },
-];
-
-const statusColors: Record<StatusLevel, string> = {
-  good: "#22c55e",
-  moderate: "#f59e0b", 
-  poor: "#f97316",
-  critical: "#ef4444",
-};
+const statusColors: Record<StatusLevel, string> = { good: "#22c55e", moderate: "#f59e0b", poor: "#f97316", critical: "#ef4444" };
+const hotspotColors: Record<string, string> = { low: "#22c55e", medium: "#f59e0b", high: "#f97316", critical: "#ef4444" };
 
 function StatusDot({ status, size = "md", pulse = false }: { status: StatusLevel; size?: "sm" | "md" | "lg"; pulse?: boolean }) {
   const sizeClasses = { sm: "w-2 h-2", md: "w-3 h-3", lg: "w-4 h-4" };
-  const colorClasses: Record<StatusLevel, string> = {
-    good: "bg-emerald-500", moderate: "bg-amber-500", poor: "bg-orange-500", critical: "bg-red-500",
-  };
+  const colorClasses: Record<StatusLevel, string> = { good: "bg-emerald-500", moderate: "bg-amber-500", poor: "bg-orange-500", critical: "bg-red-500" };
   return <span className={`inline-block rounded-full ${colorClasses[status]} ${sizeClasses[size]} ${pulse ? "animate-pulse" : ""}`} />;
 }
 
-function StatCard({ icon: Icon, label, value, subValue, trend, trendDirection, color = "primary" }: {
-  icon: React.ElementType; label: string; value: string | number; subValue?: string;
-  trend?: string; trendDirection?: "up" | "down"; color?: "primary" | "success" | "warning" | "danger";
-}) {
-  const colorClasses = {
-    primary: "bg-primary/10 text-primary", success: "bg-emerald-500/10 text-emerald-600",
-    warning: "bg-amber-500/10 text-amber-600", danger: "bg-red-500/10 text-red-600",
-  };
+function WardSelector({ selectedWard, onSelectWard }: { selectedWard: string; onSelectWard: (id: string) => void }) {
   return (
-    <div className="bg-card rounded-xl border p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}><Icon className="w-4 h-4" /></div>
-        {trend && (
-          <div className={`flex items-center gap-0.5 text-xs font-medium ${trendDirection === "down" ? "text-emerald-600" : "text-red-500"}`}>
-            {trendDirection === "down" ? <ArrowDownRight className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}{trend}
-          </div>
-        )}
-      </div>
-      <div className="mt-3">
-        <p className="text-2xl font-display font-bold tracking-tight">{value}</p>
-        {subValue && <p className="text-xs text-muted-foreground mt-0.5">{subValue}</p>}
-      </div>
-      <p className="text-xs text-muted-foreground mt-1 font-medium uppercase tracking-wide">{label}</p>
-    </div>
-  );
-}
-
-function OverviewStats() {
-  const totalRoutes = delhiWards.reduce((acc, w) => acc + w.routesCount, 0);
-  const routesNeedingAction = delhiWards.reduce((acc, w) => acc + w.routesNeedingAction, 0);
-  const avgPM = Math.round(delhiWards.reduce((acc, w) => acc + w.pmLevel, 0) / delhiWards.length);
-  const avgEffectiveness = Math.round(delhiWards.reduce((acc, w) => acc + w.effectiveness, 0) / delhiWards.length);
-  const avgHumidity = Math.round(delhiWards.reduce((acc, w) => acc + w.humidity, 0) / delhiWards.length);
-
-  return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <StatCard icon={Activity} label="Avg PM10 Level" value={avgPM} subValue="µg/m³" trend="8%" trendDirection="up"
-        color={avgPM > 200 ? "danger" : avgPM > 100 ? "warning" : "success"} />
-      <StatCard icon={AlertTriangle} label="Routes Need Action" value={routesNeedingAction} subValue={`of ${totalRoutes} total`}
-        color={routesNeedingAction > 15 ? "danger" : routesNeedingAction > 5 ? "warning" : "success"} />
-      <StatCard icon={Target} label="Avg Effectiveness" value={`${avgEffectiveness}%`} subValue="PM reduction" trend="3%" trendDirection="down"
-        color={avgEffectiveness > 50 ? "success" : avgEffectiveness > 30 ? "warning" : "danger"} />
-      <StatCard icon={Droplets} label="Avg Humidity" value={`${avgHumidity}%`} subValue="Favorable conditions" color="primary" />
-    </div>
-  );
-}
-
-function EnvironmentBar() {
-  return (
-    <div className="flex items-center gap-6 px-4 py-2.5 bg-muted/50 rounded-xl border">
-      <div className="flex items-center gap-2">
-        <Thermometer className="w-4 h-4 text-orange-500" />
-        <div><p className="text-sm font-semibold">28°C</p><p className="text-[10px] text-muted-foreground">Temperature</p></div>
-      </div>
-      <div className="w-px h-8 bg-border" />
-      <div className="flex items-center gap-2">
-        <Wind className="w-4 h-4 text-sky-500" />
-        <div><p className="text-sm font-semibold">12 km/h NW</p><p className="text-[10px] text-muted-foreground">Wind</p></div>
-      </div>
-      <div className="w-px h-8 bg-border" />
-      <div className="flex items-center gap-2">
-        <Droplets className="w-4 h-4 text-blue-500" />
-        <div><p className="text-sm font-semibold">52%</p><p className="text-[10px] text-muted-foreground">Humidity</p></div>
-      </div>
-      <div className="w-px h-8 bg-border" />
-      <div className="flex items-center gap-2">
-        <Gauge className="w-4 h-4 text-purple-500" />
-        <div><p className="text-sm font-semibold">Moderate</p><p className="text-[10px] text-muted-foreground">Sprinkling Conditions</p></div>
-      </div>
-    </div>
-  );
-}
-
-function WardInfoPanel({ ward, onClose }: { ward: WardData; onClose: () => void }) {
-  const status = getWardStatus(ward.pmLevel);
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="absolute top-4 right-4 w-80 z-[1000]">
-      <Card className="border-0 shadow-xl bg-card/95 backdrop-blur-md">
-        <CardHeader className="pb-2 pt-4 px-4 flex flex-row items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border" style={{ backgroundColor: ward.color }}>
-              <Building2 className="w-5 h-5 text-gray-700" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-display font-semibold">{ward.name}</CardTitle>
-              <p className="text-xs text-muted-foreground">Delhi Ward</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose} data-testid="button-close-ward"><X className="w-4 h-4" /></Button>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <StatusDot status={status} size="md" pulse={status === "critical"} />
-            <span className="text-sm font-medium capitalize">{status}</span>
-            {ward.routesNeedingAction > 0 && <Badge variant="destructive" className="ml-auto text-xs">{ward.routesNeedingAction} need action</Badge>}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground">PM10 Level</p>
-              <p className={`text-2xl font-display font-bold ${status === "critical" || status === "poor" ? "text-red-600" : status === "moderate" ? "text-amber-600" : "text-emerald-600"}`}>{ward.pmLevel}</p>
-              <p className="text-xs text-muted-foreground">µg/m³</p>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-xs text-muted-foreground">Effectiveness</p>
-              <p className={`text-2xl font-display font-bold ${ward.effectiveness > 50 ? "text-emerald-600" : ward.effectiveness > 30 ? "text-amber-600" : "text-red-600"}`}>{ward.effectiveness}%</p>
-              <p className="text-xs text-muted-foreground">avg reduction</p>
-            </div>
-          </div>
-          <div className="space-y-2 pt-2 border-t text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Total Routes</span><span className="font-medium">{ward.routesCount}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Routes Need Action</span><span className="font-semibold text-red-600">{ward.routesNeedingAction}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Humidity</span><span className="font-medium">{ward.humidity}%</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Contractor</span><span className="font-medium">{ward.contractor}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Last Updated</span><span className="font-medium">{ward.lastUpdated}</span></div>
-          </div>
-          <Link href={`/ward/${ward.id}`}>
-            <Button className="w-full" data-testid="button-view-ward-details">
-              View All Routes <ExternalLink className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-function WardPolygons({ onWardClick }: { onWardClick: (ward: WardData) => void }) {
-  return (
-    <>
-      {delhiWards.map(ward => {
-        const status = getWardStatus(ward.pmLevel);
-        return (
-          <Polygon
-            key={ward.id}
-            positions={ward.coordinates}
-            pathOptions={{
-              color: statusColors[status],
-              fillColor: ward.color,
-              fillOpacity: 0.6,
-              weight: 2,
-            }}
-            eventHandlers={{ click: () => onWardClick(ward) }}
-          >
-            <Popup>
-              <div className="font-sans text-center">
-                <p className="font-bold text-base">{ward.name}</p>
-                <p className="text-sm">PM10: <span className="font-semibold">{ward.pmLevel} µg/m³</span></p>
-                <p className="text-xs text-gray-500">{ward.routesNeedingAction} routes need action</p>
+    <div className="flex items-center gap-3">
+      <Building2 className="w-5 h-5 text-muted-foreground" />
+      <Select value={selectedWard} onValueChange={onSelectWard}>
+        <SelectTrigger className="w-[200px]" data-testid="ward-selector">
+          <SelectValue placeholder="Select Ward" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Wards (Delhi)</SelectItem>
+          {delhiWards.map(ward => (
+            <SelectItem key={ward.id} value={ward.id}>
+              <div className="flex items-center gap-2">
+                <StatusDot status={getWardStatus(ward.pmLevel)} size="sm" />
+                {ward.name}
               </div>
-            </Popup>
-          </Polygon>
-        );
-      })}
-    </>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
-function WardsList() {
-  const sortedWards = [...delhiWards].sort((a, b) => b.pmLevel - a.pmLevel);
+function LiveAQICard({ ward }: { ward: WardData | null }) {
+  const data = ward || {
+    pmLevel: Math.round(delhiWards.reduce((a, w) => a + w.pmLevel, 0) / delhiWards.length),
+    pm25: Math.round(delhiWards.reduce((a, w) => a + w.pm25, 0) / delhiWards.length),
+    riskIndex: Math.round(delhiWards.reduce((a, w) => a + w.riskIndex, 0) / delhiWards.length),
+    humidity: Math.round(delhiWards.reduce((a, w) => a + w.humidity, 0) / delhiWards.length),
+    temperature: Math.round(delhiWards.reduce((a, w) => a + w.temperature, 0) / delhiWards.length),
+    windSpeed: Math.round(delhiWards.reduce((a, w) => a + w.windSpeed, 0) / delhiWards.length),
+  };
+  const status = getWardStatus(data.pmLevel);
+  const riskLevel = getRiskLevel(data.riskIndex);
+  const riskColors = { low: "text-emerald-600 bg-emerald-50", medium: "text-amber-600 bg-amber-50", high: "text-orange-600 bg-orange-50", critical: "text-red-600 bg-red-50" };
+
+  return (
+    <Card className="border shadow-sm overflow-hidden">
+      <div className={`h-1 ${status === "critical" ? "bg-red-500" : status === "poor" ? "bg-orange-500" : status === "moderate" ? "bg-amber-500" : "bg-emerald-500"}`} />
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Radio className="w-4 h-4 text-red-500 animate-pulse" />
+          Live AQI Status
+          {ward && <Badge variant="outline" className="ml-auto">{ward.name}</Badge>}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 pb-4">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="text-center p-4 bg-muted/50 rounded-xl">
+            <p className="text-xs text-muted-foreground mb-1">PM10</p>
+            <p className={`text-4xl font-display font-bold ${status === "critical" || status === "poor" ? "text-red-600" : status === "moderate" ? "text-amber-600" : "text-emerald-600"}`}>{data.pmLevel}</p>
+            <p className="text-xs text-muted-foreground">µg/m³</p>
+          </div>
+          <div className="text-center p-4 bg-muted/50 rounded-xl">
+            <p className="text-xs text-muted-foreground mb-1">PM2.5</p>
+            <p className={`text-4xl font-display font-bold ${data.pm25 > 60 ? "text-red-600" : data.pm25 > 30 ? "text-amber-600" : "text-emerald-600"}`}>{data.pm25}</p>
+            <p className="text-xs text-muted-foreground">µg/m³</p>
+          </div>
+        </div>
+        <div className={`flex items-center justify-between p-3 rounded-lg ${riskColors[riskLevel]}`}>
+          <div className="flex items-center gap-2">
+            <Gauge className="w-5 h-5" />
+            <span className="font-semibold">Risk Index</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold">{data.riskIndex}</span>
+            <span className="text-xs uppercase font-medium">{riskLevel}</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 mt-4">
+          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+            <Droplets className="w-4 h-4 text-blue-500" />
+            <div><p className="text-xs font-semibold">{data.humidity}%</p><p className="text-[10px] text-muted-foreground">Humidity</p></div>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+            <Thermometer className="w-4 h-4 text-orange-500" />
+            <div><p className="text-xs font-semibold">{data.temperature}°C</p><p className="text-[10px] text-muted-foreground">Temp</p></div>
+          </div>
+          <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+            <Wind className="w-4 h-4 text-sky-500" />
+            <div><p className="text-xs font-semibold">{data.windSpeed} km/h</p><p className="text-[10px] text-muted-foreground">Wind</p></div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AQITrendChart({ wardId }: { wardId: string }) {
+  const data = useMemo(() => generateTrendData(wardId), [wardId]);
   return (
     <Card className="border shadow-sm">
       <CardHeader className="pb-2 pt-4 px-4">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-muted-foreground" />
-          All Wards
-          <Badge className="ml-auto">{delhiWards.length}</Badge>
+          <Activity className="w-4 h-4 text-muted-foreground" />
+          AQI Trend (24 Hours)
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-2 pb-4">
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="pm10Gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="pm25Gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#9ca3af" />
+            <YAxis tick={{ fontSize: 10 }} stroke="#9ca3af" />
+            <RechartsTooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Area type="monotone" dataKey="pm10" stroke="#ef4444" strokeWidth={2} fill="url(#pm10Gradient)" name="PM10" />
+            <Area type="monotone" dataKey="pm25" stroke="#3b82f6" strokeWidth={2} fill="url(#pm25Gradient)" name="PM2.5" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HotspotMap({ selectedWard }: { selectedWard: string }) {
+  const filteredHotspots = selectedWard === "all" ? hotspots : hotspots;
+  return (
+    <Card className="border shadow-sm overflow-hidden">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-muted-foreground" />
+          Pollution Hotspots
+          <Badge variant="destructive" className="ml-auto">{filteredHotspots.length} Active</Badge>
+        </CardTitle>
+      </CardHeader>
+      <div className="h-[300px]">
+        <MapContainer center={[28.62, 77.22]} zoom={11} className="h-full w-full" zoomControl={false}>
+          <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+          {delhiWards.map(ward => (
+            <Polygon key={ward.id} positions={ward.coordinates} pathOptions={{ color: statusColors[getWardStatus(ward.pmLevel)], fillColor: ward.color, fillOpacity: 0.4, weight: 1 }} />
+          ))}
+          {filteredHotspots.map(spot => (
+            <CircleMarker key={spot.id} center={[spot.lat, spot.lng]} radius={10 + (spot.pmLevel / 30)}
+              pathOptions={{ color: hotspotColors[spot.severity], fillColor: hotspotColors[spot.severity], fillOpacity: 0.7 }}>
+              <Popup><div className="font-sans"><p className="font-bold">{spot.name}</p><p className="text-sm">PM10: {spot.pmLevel} µg/m³</p><p className="text-xs text-gray-500 capitalize">{spot.type}</p></div></Popup>
+            </CircleMarker>
+          ))}
+        </MapContainer>
+      </div>
+      <CardContent className="px-4 py-3 border-t">
+        <div className="flex flex-wrap gap-3 text-xs">
+          {(["critical", "high", "medium", "low"] as const).map(level => (
+            <div key={level} className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: hotspotColors[level] }} />
+              <span className="capitalize">{level}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActionRecommendationsCard({ selectedWard }: { selectedWard: string }) {
+  const filtered = selectedWard === "all" ? actionRecommendations : actionRecommendations.filter(a => delhiWards.find(w => w.id === selectedWard)?.name === a.ward);
+  const statusIcons = { pending: <Clock className="w-4 h-4 text-amber-500" />, in_progress: <Play className="w-4 h-4 text-blue-500" />, completed: <CheckCircle className="w-4 h-4 text-emerald-500" /> };
+  const priorityColors = { high: "bg-red-100 text-red-700 border-red-200", medium: "bg-amber-100 text-amber-700 border-amber-200", low: "bg-gray-100 text-gray-700 border-gray-200" };
+
+  return (
+    <Card className="border shadow-sm">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <Lightbulb className="w-4 h-4 text-amber-500" />
+          Action Recommendations
+          <Badge className="ml-auto">{filtered.length}</Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-4 pb-4">
         <ScrollArea className="h-[280px]">
           <div className="space-y-2 pr-3">
-            {sortedWards.map(ward => {
-              const status = getWardStatus(ward.pmLevel);
-              return (
-                <Link key={ward.id} href={`/ward/${ward.id}`}>
-                  <div className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" data-testid={`ward-link-${ward.id}`}>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm" style={{ backgroundColor: ward.color }}>
-                      <Building2 className="w-4 h-4 text-gray-600" />
+            {filtered.map((rec, i) => (
+              <motion.div key={rec.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                className={`p-3 rounded-lg border ${priorityColors[rec.priority]}`} data-testid={`recommendation-${rec.id}`}>
+                <div className="flex items-start gap-2">
+                  {statusIcons[rec.status]}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{rec.action}</p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <Badge variant="outline" className="text-[10px] h-5">{rec.ward}</Badge>
+                      <Badge variant="outline" className="text-[10px] h-5"><Users className="w-3 h-3 mr-1" />{rec.department}</Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{ward.name}</p>
-                      <p className="text-xs text-muted-foreground">{ward.routesCount} routes</p>
+                    <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Target className="w-3 h-3" />{rec.estimatedImpact}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{rec.deadline}</span>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${status === "critical" || status === "poor" ? "text-red-600" : status === "moderate" ? "text-amber-600" : "text-emerald-600"}`}>{ward.pmLevel}</p>
-                      <p className="text-[10px] text-muted-foreground">µg/m³</p>
-                    </div>
-                    <StatusDot status={status} size="sm" pulse={status === "critical"} />
                   </div>
-                </Link>
-              );
-            })}
+                </div>
+              </motion.div>
+            ))}
           </div>
         </ScrollArea>
       </CardContent>
@@ -284,93 +242,164 @@ function WardsList() {
   );
 }
 
-function CriticalWardsAlert() {
-  const criticalWards = delhiWards.filter(w => getWardStatus(w.pmLevel) === "critical" || getWardStatus(w.pmLevel) === "poor");
-  if (criticalWards.length === 0) return null;
-  return (
-    <Card className="border shadow-sm border-l-4 border-l-red-500">
-      <CardHeader className="pb-2 pt-4 px-4">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-600">
-          <Zap className="w-4 h-4" />Priority Wards<Badge variant="destructive" className="ml-auto">{criticalWards.length}</Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-2">
-        {criticalWards.slice(0, 4).map(ward => (
-          <Link key={ward.id} href={`/ward/${ward.id}`}>
-            <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-red-50 border border-red-200 cursor-pointer hover:bg-red-100 transition-colors" data-testid={`critical-ward-${ward.id}`}>
-              <AlertTriangle className="w-4 h-4 text-red-600" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{ward.name}</p>
-                <p className="text-xs text-muted-foreground">{ward.routesNeedingAction} routes need immediate action</p>
-              </div>
-              <span className="text-sm font-bold text-red-600">{ward.pmLevel}</span>
-            </div>
-          </Link>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-function ActionPlansCard({ plans }: { plans: ActionPlan[] }) {
-  const slotConfig: Record<TimeSlot, { icon: React.ElementType; time: string; color: string }> = {
-    morning: { icon: Sun, time: "6:00 - 10:00", color: "text-amber-500" },
-    evening: { icon: Sunset, time: "16:00 - 19:00", color: "text-orange-500" },
-    night: { icon: Moon, time: "22:00 - 02:00", color: "text-indigo-500" },
+function ActionHistoryTable({ selectedWard }: { selectedWard: string }) {
+  const [search, setSearch] = useState("");
+  const filtered = useMemo(() => {
+    let data = selectedWard === "all" ? actionHistory : actionHistory.filter(a => delhiWards.find(w => w.id === selectedWard)?.name === a.ward);
+    if (search) data = data.filter(a => a.action.toLowerCase().includes(search.toLowerCase()) || a.ward.toLowerCase().includes(search.toLowerCase()));
+    return data;
+  }, [selectedWard, search]);
+  const statusBadges = {
+    completed: <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Completed</Badge>,
+    partial: <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Partial</Badge>,
+    failed: <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Failed</Badge>
   };
+
   return (
     <Card className="border shadow-sm">
       <CardHeader className="pb-2 pt-4 px-4">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2"><Clock className="w-4 h-4 text-muted-foreground" />Today's Action Plans</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <History className="w-4 h-4 text-muted-foreground" />
+            Action History
+          </CardTitle>
+          <div className="relative w-48">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search..." className="pl-8 h-8 text-xs" value={search} onChange={e => setSearch(e.target.value)} data-testid="history-search" />
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <Tabs defaultValue="morning" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 h-9 mb-3">
-            {(["morning", "evening", "night"] as TimeSlot[]).map(slot => {
-              const config = slotConfig[slot];
-              const Icon = config.icon;
-              return <TabsTrigger key={slot} value={slot} className="text-xs gap-1.5" data-testid={`tab-${slot}`}><Icon className={`w-3.5 h-3.5 ${config.color}`} /><span className="capitalize">{slot}</span></TabsTrigger>;
-            })}
-          </TabsList>
-          {plans.map(plan => {
-            const config = slotConfig[plan.slot];
-            return (
-              <TabsContent key={plan.slot} value={plan.slot} className="mt-0 space-y-2">
-                <p className="text-xs text-muted-foreground mb-2">{config.time}</p>
-                {plan.routes.map(route => (
-                  <div key={route.id} className={`flex items-center gap-2 p-2.5 rounded-lg text-sm border ${route.priority === "high" ? "bg-red-50 border-red-200" : route.priority === "medium" ? "bg-amber-50 border-amber-200" : "bg-muted border-transparent"}`} data-testid={`plan-route-${route.id}`}>
-                    <CircleDot className={`w-3.5 h-3.5 flex-shrink-0 ${route.priority === "high" ? "text-red-500" : route.priority === "medium" ? "text-amber-500" : "text-muted-foreground"}`} />
-                    <div className="flex-1 min-w-0"><p className="font-medium truncate">{route.name}</p><p className="text-xs text-muted-foreground truncate">{route.reason}</p></div>
-                  </div>
-                ))}
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+      <CardContent className="px-0 pb-0">
+        <ScrollArea className="h-[300px]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs">Date/Time</TableHead>
+                <TableHead className="text-xs">Ward</TableHead>
+                <TableHead className="text-xs">Action</TableHead>
+                <TableHead className="text-xs">Department</TableHead>
+                <TableHead className="text-xs text-right">Before</TableHead>
+                <TableHead className="text-xs text-right">After</TableHead>
+                <TableHead className="text-xs text-right">Impact</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(action => (
+                <TableRow key={action.id} data-testid={`history-row-${action.id}`}>
+                  <TableCell className="text-xs"><p className="font-medium">{action.date}</p><p className="text-muted-foreground">{action.time}</p></TableCell>
+                  <TableCell className="text-xs font-medium">{action.ward}</TableCell>
+                  <TableCell className="text-xs max-w-[200px] truncate">{action.action}</TableCell>
+                  <TableCell className="text-xs">{action.department}</TableCell>
+                  <TableCell className="text-xs text-right font-medium text-red-600">{action.pmBefore}</TableCell>
+                  <TableCell className="text-xs text-right font-medium text-emerald-600">{action.pmAfter}</TableCell>
+                  <TableCell className="text-xs text-right">
+                    <span className={`font-semibold ${action.effectiveness > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {action.effectiveness > 0 ? "-" : "+"}{Math.abs(action.effectiveness)}%
+                    </span>
+                  </TableCell>
+                  <TableCell>{statusBadges[action.status]}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
 }
 
-function MapLegend() {
+function CitizenComplaintsCard({ selectedWard }: { selectedWard: string }) {
+  const filtered = selectedWard === "all" ? citizenComplaints : citizenComplaints.filter(c => delhiWards.find(w => w.id === selectedWard)?.name === c.ward);
+  const unresolvedCount = filtered.filter(c => !c.resolved).length;
+
   return (
-    <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-lg p-3 shadow-md border">
-      <p className="text-xs font-semibold text-muted-foreground mb-2">Ward PM Status</p>
-      <div className="flex flex-wrap gap-3">
-        {(["good", "moderate", "poor", "critical"] as StatusLevel[]).map(status => (
-          <div key={status} className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm border" style={{ backgroundColor: statusColors[status] }} />
-            <span className="text-xs capitalize">{status}</span>
+    <Card className="border shadow-sm">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-muted-foreground" />
+          Citizen Complaints
+          <Badge variant="destructive" className="ml-auto">{unresolvedCount} Unresolved</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 pb-4">
+        <ScrollArea className="h-[220px]">
+          <div className="space-y-2 pr-3">
+            {filtered.map(complaint => (
+              <div key={complaint.id} className={`p-3 rounded-lg border ${complaint.resolved ? "bg-muted/30" : "bg-red-50 border-red-200"}`} data-testid={`complaint-${complaint.id}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={complaint.resolved ? "secondary" : "destructive"} className="text-[10px] h-5">{complaint.type}</Badge>
+                      <span className="text-[10px] text-muted-foreground">{complaint.ward}</span>
+                    </div>
+                    <p className="text-xs mt-1.5 text-muted-foreground line-clamp-2">{complaint.description}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${complaint.pmCorrelation > 80 ? "bg-red-500" : complaint.pmCorrelation > 60 ? "bg-amber-500" : "bg-emerald-500"}`} />
+                      <span className="text-xs font-semibold">{complaint.pmCorrelation}%</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">PM Correlation</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
+                  <span>{complaint.date}</span>
+                  {complaint.resolved ? (
+                    <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="w-3 h-3" />Resolved</span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-red-600"><XCircle className="w-3 h-3" />Pending</span>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+}
+
+function QuickStats({ selectedWard }: { selectedWard: string }) {
+  const wards = selectedWard === "all" ? delhiWards : delhiWards.filter(w => w.id === selectedWard);
+  const totalRoutes = wards.reduce((a, w) => a + w.routesCount, 0);
+  const needsAction = wards.reduce((a, w) => a + w.routesNeedingAction, 0);
+  const avgEffectiveness = Math.round(wards.reduce((a, w) => a + w.effectiveness, 0) / wards.length);
+  const totalComplaints = wards.reduce((a, w) => a + w.complaints, 0);
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <Card className="border shadow-sm p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-100"><Activity className="w-5 h-5 text-blue-600" /></div>
+          <div><p className="text-2xl font-display font-bold">{totalRoutes}</p><p className="text-xs text-muted-foreground">Total Routes</p></div>
+        </div>
+      </Card>
+      <Card className="border shadow-sm p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-red-100"><AlertTriangle className="w-5 h-5 text-red-600" /></div>
+          <div><p className="text-2xl font-display font-bold text-red-600">{needsAction}</p><p className="text-xs text-muted-foreground">Need Action</p></div>
+        </div>
+      </Card>
+      <Card className="border shadow-sm p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-emerald-100"><Target className="w-5 h-5 text-emerald-600" /></div>
+          <div><p className="text-2xl font-display font-bold text-emerald-600">{avgEffectiveness}%</p><p className="text-xs text-muted-foreground">Avg Effectiveness</p></div>
+        </div>
+      </Card>
+      <Card className="border shadow-sm p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-100"><MessageSquare className="w-5 h-5 text-amber-600" /></div>
+          <div><p className="text-2xl font-display font-bold text-amber-600">{totalComplaints}</p><p className="text-xs text-muted-foreground">Complaints</p></div>
+        </div>
+      </Card>
     </div>
   );
 }
 
 export default function Dashboard() {
-  const [selectedWard, setSelectedWard] = useState<WardData | null>(null);
-  const totalRoutesNeedingAction = delhiWards.reduce((acc, w) => acc + w.routesNeedingAction, 0);
+  const [selectedWard, setSelectedWard] = useState("all");
+  const currentWard = selectedWard === "all" ? null : delhiWards.find(w => w.id === selectedWard) || null;
 
   return (
     <div className="min-h-screen bg-background" data-testid="dashboard">
@@ -385,44 +414,72 @@ export default function Dashboard() {
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Delhi Municipal Corporation</p>
             </div>
           </div>
+          <div className="ml-6"><WardSelector selectedWard={selectedWard} onSelectWard={setSelectedWard} /></div>
           <div className="ml-auto flex items-center gap-3">
-            <Badge variant="secondary" className="gap-1.5" data-testid="badge-action-count">
-              <AlertTriangle className="w-3.5 h-3.5 text-red-500" />{totalRoutesNeedingAction} routes need action
-            </Badge>
-            <Badge variant="outline" className="gap-1.5 text-xs"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />Live Data</Badge>
+            <Badge variant="outline" className="gap-1.5 text-xs"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />Live</Badge>
+            <span className="text-xs text-muted-foreground">Updated just now</span>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
-        <OverviewStats />
-        <EnvironmentBar />
+        <QuickStats selectedWard={selectedWard} />
+        
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            <LiveAQICard ward={currentWard} />
+            <AQITrendChart wardId={selectedWard === "all" ? "central" : selectedWard} />
+          </div>
+          <div className="col-span-12 lg:col-span-8 space-y-6">
+            <HotspotMap selectedWard={selectedWard} />
+            <ActionRecommendationsCard selectedWard={selectedWard} />
+          </div>
+        </div>
+
+        <ActionHistoryTable selectedWard={selectedWard} />
 
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 lg:col-span-8">
-            <Card className="border shadow-sm overflow-hidden">
+          <div className="col-span-12 lg:col-span-6">
+            <CitizenComplaintsCard selectedWard={selectedWard} />
+          </div>
+          <div className="col-span-12 lg:col-span-6">
+            <Card className="border shadow-sm h-full">
               <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  Delhi Ward Map
-                  <span className="text-xs text-muted-foreground font-normal ml-2">Click a ward for details</span>
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  Complaint-AQI Correlation Analysis
                 </CardTitle>
               </CardHeader>
-              <div className="relative h-[500px]">
-                <MapContainer center={[28.62, 77.22]} zoom={11} className="h-full w-full" zoomControl={false}>
-                  <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-                  <WardPolygons onWardClick={setSelectedWard} />
-                </MapContainer>
-                <MapLegend />
-                <AnimatePresence>{selectedWard && <WardInfoPanel ward={selectedWard} onClose={() => setSelectedWard(null)} />}</AnimatePresence>
-              </div>
+              <CardContent className="px-4 pb-4">
+                <div className="space-y-4">
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-red-700">High Correlation Zones</p>
+                        <p className="text-xs text-red-600 mt-1">Shahdara, North East have 85%+ complaint-PM correlation</p>
+                      </div>
+                      <div className="text-3xl font-bold text-red-600">3</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Most Common Issue</p>
+                      <p className="font-semibold mt-1">Road Dust</p>
+                      <p className="text-xs text-muted-foreground">42% of complaints</p>
+                    </div>
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Avg Response Time</p>
+                      <p className="font-semibold mt-1">2.4 hours</p>
+                      <p className="text-xs text-muted-foreground">Target: 2 hours</p>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-xs font-medium text-amber-700 mb-2">Insight</p>
+                    <p className="text-sm text-amber-800">Complaints spike 2-3 hours after PM10 exceeds 200 µg/m³. Proactive sprinkling can reduce complaints by 40%.</p>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
-          </div>
-
-          <div className="col-span-12 lg:col-span-4 space-y-6">
-            <CriticalWardsAlert />
-            <WardsList />
-            <ActionPlansCard plans={mockActionPlans} />
           </div>
         </div>
       </main>
