@@ -21,10 +21,11 @@ interface HotspotMapProps {
         steps: string[];
         impactedWards: string[];
     } | null;
-    additionalRoutes?: { path: [number, number][], color?: string, label?: string }[];
+    additionalRoutes?: { path: [number, number][], color?: string, label?: string, assignedTo?: string }[];
     className?: string;
     title?: string;
     showLegend?: boolean;
+    onRouteClick?: (route: any) => void;
 }
 
 // Map Controls Component
@@ -55,7 +56,7 @@ function MapController({ zoomAction, centerAction }: { zoomAction: 'in' | 'out' 
     return null;
 }
 
-export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, className, title, showLegend = true }: HotspotMapProps) {
+export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, className, title, showLegend = true, onRouteClick }: HotspotMapProps) {
     const [hoveredWard, setHoveredWard] = useState<string | null>(null);
     const [zoomAction, setZoomAction] = useState<'in' | 'out' | null>(null);
     const [centerAction, setCenterAction] = useState(false);
@@ -201,35 +202,88 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
 
                     {/* Main Route */}
                     {generatedPlan?.route && Array.isArray(generatedPlan.route) && generatedPlan.route.length > 0 && (
-                        <>
-                            <Polyline
-                                positions={generatedPlan.route}
-                                pathOptions={{ color: '#0f172a', weight: 4, opacity: 0.8, dashArray: '10, 10' }}
-                            />
-                            {generatedPlan.route[0] && (
-                                <Marker position={generatedPlan.route[0]}>
-                                    <Popup>Main Start</Popup>
-                                </Marker>
-                            )}
-                            {generatedPlan.route[generatedPlan.route.length - 1] && (
-                                <Marker position={generatedPlan.route[generatedPlan.route.length - 1]}>
-                                    <Popup>Main End</Popup>
-                                </Marker>
-                            )}
-                        </>
+                        (() => {
+                            // Extra safety: Filter out any null/invalid points from the route
+                            const safeRoute = generatedPlan.route.filter((p: any) => Array.isArray(p) && p.length >= 2 && typeof p[0] === 'number' && typeof p[1] === 'number');
+
+                            if (safeRoute.length === 0) return null;
+
+                            return (
+                                <>
+                                    <Polyline
+                                        positions={safeRoute as any}
+                                        pathOptions={{ color: '#0f172a', weight: 5, opacity: 0.9, dashArray: '10, 10' }} // Thicker for main
+                                        eventHandlers={{
+                                            click: () => onRouteClick && onRouteClick({ label: "Main Route", ...generatedPlan })
+                                        }}
+                                    />
+                                    {safeRoute[0] && (
+                                        <Marker position={safeRoute[0] as any}>
+                                            <Popup>Main Start</Popup>
+                                        </Marker>
+                                    )}
+                                    {safeRoute[safeRoute.length - 1] && (
+                                        <Marker position={safeRoute[safeRoute.length - 1] as any}>
+                                            <Popup>Main End</Popup>
+                                        </Marker>
+                                    )}
+                                </>
+                            );
+                        })()
                     )}
 
                     {/* Additional Routes */}
                     {additionalRoutes && Array.isArray(additionalRoutes) && additionalRoutes.map((route: any, idx: number) => {
                         if (!route?.path || !Array.isArray(route.path) || route.path.length === 0) return null;
+
+                        // Extra safety filter for additional routes too
+                        const safePath = route.path.filter((p: any) => Array.isArray(p) && p.length >= 2 && typeof p[0] === 'number' && typeof p[1] === 'number');
+                        if (safePath.length === 0) return null;
+
+                        const isSprinkler = true; // Assume all additional routes are sprinklers for now
+                        const baseColor = route.color || '#3b82f6';
+
                         return (
-                            <Polyline
-                                key={idx}
-                                positions={route.path}
-                                pathOptions={{ color: route.color || '#3b82f6', weight: 3, opacity: 0.7 }}
-                            >
-                                {route.label && <Popup>{route.label}</Popup>}
-                            </Polyline>
+                            <div key={idx}>
+                                { /* Invisible Click Target (Hit Box) */}
+                                <Polyline
+                                    positions={safePath as any}
+                                    pathOptions={{ color: 'transparent', weight: 20, opacity: 0 }}
+                                    eventHandlers={{
+                                        click: (e) => {
+                                            if (onRouteClick) onRouteClick(route);
+                                            // e.target.openPopup(); // Optional: popup
+                                        },
+                                        mouseover: () => setHoveredWard(`route-${idx}`), // Hack to trigger hover state
+                                        mouseout: () => setHoveredWard(null)
+                                    }}
+                                />
+
+                                { /* Visible "Sprinkler" Route */}
+                                <Polyline
+                                    positions={safePath as any}
+                                    pathOptions={{
+                                        color: baseColor,
+                                        weight: hoveredWard === `route-${idx}` ? 8 : 5,
+                                        opacity: 0.8,
+                                        lineCap: 'round',
+                                        lineJoin: 'round'
+                                    }}
+                                >
+                                    {route.label && <Popup className="font-semibold">{route.label}</Popup>}
+                                </Polyline>
+
+                                { /* Water Flow Effect (Lighter center) */}
+                                <Polyline
+                                    positions={safePath as any}
+                                    pathOptions={{
+                                        color: '#bae6fd',
+                                        weight: 2,
+                                        opacity: 0.9
+                                    }}
+                                    eventHandlers={{ click: () => onRouteClick && onRouteClick(route) }}
+                                />
+                            </div>
                         );
                     })}
                 </MapContainer>

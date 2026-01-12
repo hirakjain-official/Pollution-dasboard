@@ -7,7 +7,8 @@ import { seedDatabase } from "./seed";
 import { fetchWeather, fetchAQI } from "./services/weatherService";
 import { generateActionPlan } from "./services/aiService";
 import { updateLiveData } from "./services/liveDataService";
-import { getLiveWards, updateLiveWeatherData, addComplaint, getComplaints } from "./services/inMemoryWeatherService";
+import { getLiveWards, updateLiveWeatherData, addComplaint, getComplaints, getShiftPlan, generateAutoShiftPlan, getHistory } from "./services/inMemoryWeatherService";
+import { masterLLM } from "./services/masterLLM";
 
 // Import mock data for other endpoints
 import {
@@ -83,11 +84,24 @@ export async function registerRoutes(
   });
 
   app.post("/api/complaints", async (req, res) => {
+    // 1. Analyze with Master LLM first
+    const analysis = await masterLLM.processQuery(
+      `Analyze this complaint: "${req.body.description}". Location: ${req.body.ward}. Type: ${req.body.type}`,
+      "complaint"
+    );
+
+    const enrichedComplaint = {
+      ...req.body,
+      severity: analysis.severity || "Medium",
+      sentiment: analysis.sentiment || "Neutral",
+      aiAnalysis: analysis
+    };
+
     if (!isMongoConnected()) {
-      const complaint = addComplaint(req.body);
+      const complaint = addComplaint(enrichedComplaint);
       return res.json(complaint);
     }
-    const complaint = await CitizenComplaint.create(req.body);
+    const complaint = await CitizenComplaint.create(enrichedComplaint);
     res.json(complaint);
   });
 
@@ -118,31 +132,20 @@ export async function registerRoutes(
   app.get("/api/shifts", async (req, res) => {
     if (!isMongoConnected()) {
       const type = (req.query.type as string) || "morning";
-      const mockPlan = {
-        type,
-        date: new Date().toISOString(),
-        routes: [
-          {
-            id: `${type}-route-1`,
-            priority: "High",
-            path: [[28.7, 77.2], [28.71, 77.21], [28.72, 77.22]],
-            assignedTo: "Unit 1"
-          }
-        ],
-        focus: type === "morning" ? "School Zones" : type === "evening" ? "Traffic Areas" : "Construction Sites",
-        steps: [
-          `Deploy ${type} patrol`,
-          "Monitor air quality",
-          "Apply dust suppression"
-        ],
-        impactedWards: ["Central", "North"]
-      };
-      return res.json(mockPlan);
+      const plan = getShiftPlan(type);
+      return res.json(plan);
     }
     const date = req.query.date ? new Date(req.query.date as string) : new Date();
     const type = (req.query.type as string) || "morning";
     const plan = await storage.getShiftPlan(date, type);
     res.json(plan || { message: "No plan found", routes: [] });
+  });
+
+  // Auto-generate Shift Plan (AI/Simulated)
+  app.post("/api/shifts/auto-generate", async (req, res) => {
+    const type = (req.body.type as string) || "morning";
+    const plan = await generateAutoShiftPlan(type);
+    res.json(plan);
   });
 
   app.post("/api/shifts", async (req, res) => {
@@ -227,18 +230,72 @@ export async function registerRoutes(
   });
 
   // Generate AI Action Plan
+  // Generate AI Action Plan (Mission)
   app.post("/api/ai/plan", async (req, res) => {
-    const { wardName, aqi, resources } = req.body;
+    const { mission } = req.body;
     try {
-      const plan = await generateActionPlan(
-        wardName || "General Delhi",
-        aqi || 200,
-        resources || []
+      const plan = await masterLLM.processQuery(
+        `Generate a technical deployment plan for mission: "${mission || "Reduce PM2.5 in critical zones"}"`,
+        "mission"
       );
       res.json(plan);
     } catch (error) {
       console.error("AI Plan generation failed:", error);
       res.status(500).json({ error: "AI generation failed" });
+    }
+  });
+
+  // Generate Strategy Insights (New)
+  app.post("/api/ai/strategy", async (req, res) => {
+    try {
+      const strategy = await masterLLM.processQuery(
+        "Analyze current city-wide data and provide strategic recommendations.",
+        "strategy"
+      );
+      res.json(strategy);
+    } catch (error) {
+      console.error("Strategy generation failed:", error);
+      res.status(500).json({ error: "Strategy generation failed" });
+    }
+  });
+
+  // History endpoint for Trend Chart
+  app.get("/api/history", (req, res) => {
+    try {
+      const history = getHistory();
+      res.json(history);
+    } catch (error: any) {
+      console.error("History fetch error:", error);
+      res.status(500).json({ error: error.message, stack: error.stack });
+    }
+  });
+
+  // Debug endpoint for Weather API
+  app.get("/api/debug/weather", async (req, res) => {
+    try {
+      const lat = 28.6139;
+      const lng = 77.2090;
+      const [weather, aqi] = await Promise.all([
+        fetchWeather(lat, lng),
+        fetchAQI(lat, lng)
+      ]);
+
+      if (!weather || !aqi) {
+        return res.status(500).json({ error: "API returned null (likely auth or quota issue)" });
+      }
+
+      res.json({
+        source: "Real OpenWeatherMap API",
+        weather,
+        aqi,
+        raw_key_test: process.env.OPENWEATHER_API_KEY ? "Key Configured" : "Key Missing"
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        error: "Fetch failed",
+        details: error.message,
+        stack: error.stack
+      });
     }
   });
 

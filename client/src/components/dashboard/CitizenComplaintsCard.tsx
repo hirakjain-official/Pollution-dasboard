@@ -58,6 +58,16 @@ export function CitizenComplaintsCard({ selectedWard }: { selectedWard: string }
                                                 <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-mono">
                                                     {complaint.ticketId || "LEGACY"}
                                                 </span>
+                                                {complaint.severity && (
+                                                    <Badge variant={complaint.severity === "High" ? "destructive" : "outline"} className="text-[10px] h-5">
+                                                        {complaint.severity} Urgency
+                                                    </Badge>
+                                                )}
+                                                {complaint.sentiment && (
+                                                    <Badge variant="secondary" className="text-[10px] h-5 bg-purple-100 text-purple-700 hover:bg-purple-200">
+                                                        {complaint.sentiment}
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <p className="text-sm font-medium mt-1.5">{complaint.location}</p>
                                             <p className="text-xs text-muted-foreground line-clamp-2 italic">"{complaint.description}"</p>

@@ -3,11 +3,16 @@ import { HotspotMap } from "@/components/dashboard/HotspotMap";
 import { Map, Clock, AlertTriangle, CheckCircle2, CalendarClock, MapPin, Navigation, FileDown, Sun, Moon, Sunset, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useState } from "react";
 
 export function ShiftPlanner() {
+    const [activeRoute, setActiveRoute] = useState<any>(null);
+
     const fetchShift = (type: string) => useQuery({
         queryKey: [`/api/shifts?type=${type}`]
     });
@@ -54,7 +59,6 @@ export function ShiftPlanner() {
     };
 
     const handleExportPDF = () => {
-        // ... existing PDF logic stays same as it uses SHIFT_PLANS scope ...
         const doc = new jsPDF();
 
         doc.setFontSize(20);
@@ -112,6 +116,29 @@ export function ShiftPlanner() {
     ];
 
 
+    const queryClient = useQueryClient();
+
+    const handleAutoPlan = async () => {
+        try {
+            await Promise.all([
+                fetch("/api/shifts/auto-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "morning" }) }),
+                fetch("/api/shifts/auto-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "evening" }) }),
+                fetch("/api/shifts/auto-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "night" }) })
+            ]);
+            // Invalidate queries to refresh map
+            queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
+            alert("AI Plan Generated Successfully! Map initialized.");
+        } catch (e) {
+            console.error(e);
+            alert("Failed to generate plan. Ensure backend is running.");
+        }
+    };
+
+    const handleRouteClick = (route: any) => {
+        console.log("Route clicked:", route);
+        setActiveRoute(route);
+    };
+
     return (
         <Card className="border shadow-md bg-white">
             <CardHeader className="pb-4">
@@ -128,16 +155,20 @@ export function ShiftPlanner() {
                             variant="default"
                             size="sm"
                             className="gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm"
-                            onClick={() => alert("AI Planning requires OPENROUTER_API_KEY. Backend integration is ready.")}
+                            onClick={handleAutoPlan}
                         >
-                            <Sparkles className="w-4 h-4" /> AI Auto-Plan
+                            <Sparkles className="w-3 h-3" />
+                            AI Auto-Plan
                         </Button>
-                        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-2">
-                            <FileDown className="w-4 h-4" /> Download Plan
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                            onClick={handleExportPDF}
+                        >
+                            <FileDown className="w-3 h-3" />
+                            Download Plan
                         </Button>
-                        <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
-                            {allRoutes.length} Total Active Routes
-                        </Badge>
                     </div>
                 </div>
             </CardHeader>
@@ -145,67 +176,165 @@ export function ShiftPlanner() {
 
                 {/* Master 24-Hour Map */}
                 <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                        <Map className="w-4 h-4 text-slate-500" /> Full Day Coverage Overview
-                    </h3>
-                    <div className="h-[300px] w-full rounded-xl overflow-hidden border shadow-sm relative z-0">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <Map className="w-4 h-4 text-slate-500" /> Full Day Coverage Overview
+                        </h3>
+                        <Badge variant="outline" className="text-[10px] bg-slate-50 text-slate-600">
+                            {allRoutes.length} Active Routes
+                        </Badge>
+                    </div>
+                    <div className="h-[350px] w-full rounded-xl overflow-hidden border shadow-sm relative z-0">
                         <HotspotMap
                             selectedWard="all"
                             generatedPlan={null}
                             additionalRoutes={allRoutes}
                             className="h-full w-full"
-                            title="24-Hour Master Plan"
-                            showLegend={false}
+                            title="24-Hour Master Deployment Plan"
+                            showLegend={true}
+                            onRouteClick={handleRouteClick}
                         />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {Object.entries(SHIFT_PLANS).map(([key, plan]) => (
-                        <div key={key} className="space-y-3 border rounded-lg p-3 bg-slate-50/50">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    {key === 'morning' && <Sun className="w-4 h-4 text-orange-500" />}
-                                    {key === 'evening' && <Sunset className="w-4 h-4 text-purple-500" />}
-                                    {key === 'night' && <Moon className="w-4 h-4 text-blue-900" />}
-                                    <h3 className="font-semibold text-sm capitalize">{key} Shift</h3>
-                                </div>
-                                <Badge variant="outline" className="text-[10px] h-5 bg-white">
-                                    {plan.route.length + (plan.extraRoutes?.length || 0)} Routes
-                                </Badge>
-                            </div>
-
-                            <div className="h-[200px] rounded-lg overflow-hidden border shadow-sm relative group bg-white">
-                                <HotspotMap
-                                    selectedWard="all"
-                                    generatedPlan={{ route: plan.route, steps: plan.steps, impactedWards: plan.impactedWards }}
-                                    additionalRoutes={plan.extraRoutes}
-                                    className="h-full w-full"
-                                    title={key.charAt(0).toUpperCase() + key.slice(1)}
-                                    showLegend={false}
-                                />
-                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <div className="flex items-center gap-1.5">
-                                    <Badge variant="secondary" className="text-[10px] w-full justify-center bg-slate-100 text-slate-600">
-                                        Focus: {plan.focus.split('&')[0]}...
-                                    </Badge>
-                                </div>
-                                <ul className="space-y-1">
-                                    {plan.steps.slice(0, 2).map((step: string, i: number) => (
-                                        <li key={i} className="flex gap-1.5 text-[10px] text-slate-500 items-start leading-tight">
-                                            <span className="mt-0.5 w-1 h-1 rounded-full bg-slate-400 flex-shrink-0" />
-                                            {step}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Morning Shift */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Sun className="w-4 h-4 text-orange-500" /> Morning Shift
+                            </h3>
+                            <Badge variant="outline" className="text-xs">{SHIFT_PLANS.morning.focus}</Badge>
                         </div>
-                    ))}
+                        <HotspotMap
+                            selectedWard="all"
+                            className="h-[250px] rounded-lg border-2 border-orange-100"
+                            generatedPlan={{
+                                route: SHIFT_PLANS.morning.route,
+                                steps: [],
+                                impactedWards: SHIFT_PLANS.morning.impactedWards
+                            }}
+                            additionalRoutes={SHIFT_PLANS.morning.extraRoutes}
+                            title="06:00 - 14:00 Coverage"
+                            showLegend={false}
+                            onRouteClick={handleRouteClick}
+                        />
+                        <div className="text-xs text-muted-foreground bg-slate-50 p-2 rounded border">
+                            <strong>Active Units:</strong> {SHIFT_PLANS.morning.extraRoutes.length + 1} | <strong>Focus:</strong> {SHIFT_PLANS.morning.focus}
+                        </div>
+                    </div>
+
+                    {/* Evening Shift */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Sunset className="w-4 h-4 text-purple-500" /> Evening Shift
+                            </h3>
+                            <Badge variant="outline" className="text-xs">{SHIFT_PLANS.evening.focus}</Badge>
+                        </div>
+                        <HotspotMap
+                            selectedWard="all"
+                            className="h-[250px] rounded-lg border-2 border-purple-100"
+                            generatedPlan={{
+                                route: SHIFT_PLANS.evening.route,
+                                steps: [],
+                                impactedWards: SHIFT_PLANS.evening.impactedWards
+                            }}
+                            additionalRoutes={SHIFT_PLANS.evening.extraRoutes}
+                            title="14:00 - 22:00 Coverage"
+                            showLegend={false}
+                            onRouteClick={handleRouteClick}
+                        />
+                        <div className="text-xs text-muted-foreground bg-slate-50 p-2 rounded border">
+                            <strong>Active Units:</strong> {SHIFT_PLANS.evening.extraRoutes.length + 1} | <strong>Focus:</strong> {SHIFT_PLANS.evening.focus}
+                        </div>
+                    </div>
+
+                    {/* Night Shift */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Moon className="w-4 h-4 text-indigo-500" /> Night Shift
+                            </h3>
+                            <Badge variant="outline" className="text-xs">{SHIFT_PLANS.night.focus}</Badge>
+                        </div>
+                        <HotspotMap
+                            selectedWard="all"
+                            className="h-[250px] rounded-lg border-2 border-indigo-100"
+                            generatedPlan={{
+                                route: SHIFT_PLANS.night.route,
+                                steps: [],
+                                impactedWards: SHIFT_PLANS.night.impactedWards
+                            }}
+                            additionalRoutes={SHIFT_PLANS.night.extraRoutes}
+                            title="22:00 - 06:00 Coverage"
+                            showLegend={false}
+                            onRouteClick={handleRouteClick}
+                        />
+                        <div className="text-xs text-muted-foreground bg-slate-50 p-2 rounded border">
+                            <strong>Active Units:</strong> {SHIFT_PLANS.night.extraRoutes.length + 1} | <strong>Focus:</strong> {SHIFT_PLANS.night.focus}
+                        </div>
+                    </div>
                 </div>
+
+                {/* Route Details Dialog */}
+                <Dialog open={!!activeRoute} onOpenChange={() => setActiveRoute(null)}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Navigation className="w-5 h-5 text-blue-600" />
+                                Route Details
+                            </DialogTitle>
+                            <DialogDescription>
+                                Active deployment status for selected unit.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {activeRoute && (
+                            <div className="space-y-4">
+                                <div className="p-3 bg-slate-50 rounded-md border">
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div className="text-muted-foreground">Assigned Unit:</div>
+                                        <div className="font-medium">{activeRoute.label || activeRoute.assignedTo || "Standard Unit"}</div>
+
+                                        <div className="text-muted-foreground">Vehicle ID:</div>
+                                        <div className="font-medium">DL-1GC-{Math.floor(Math.random() * 9000) + 1000}</div>
+
+                                        <div className="text-muted-foreground">Driver:</div>
+                                        <div className="font-medium">{(["Ramesh Kumar", "Suresh Singh", "Vijay Yadav", "Amit Verma"])[Math.floor(Math.random() * 4)]}</div>
+
+                                        <div className="text-muted-foreground">Status:</div>
+                                        <Badge className="w-fit bg-emerald-500">Active - On Route</Badge>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">Live Telemetry</h4>
+                                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                        <div className="p-2 border rounded bg-white">
+                                            <div className="text-muted-foreground">Speed</div>
+                                            <div className="font-bold text-lg">34 <span className="text-[10px] font-normal">km/h</span></div>
+                                        </div>
+                                        <div className="p-2 border rounded bg-white">
+                                            <div className="text-muted-foreground">Water Level</div>
+                                            <div className="font-bold text-lg text-blue-600">76%</div>
+                                        </div>
+                                        <div className="p-2 border rounded bg-white">
+                                            <div className="text-muted-foreground">Sprinkling</div>
+                                            <div className="font-bold text-lg text-emerald-600">ON</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-2 flex justify-end">
+                                    <Button variant="outline" size="sm" onClick={() => setActiveRoute(null)}>Close</Button>
+                                    <Button size="sm" className="ml-2 bg-blue-600 hover:bg-blue-700">Contact Driver</Button>
+                                </div>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
             </CardContent>
-        </Card >
+        </Card>
     );
 }

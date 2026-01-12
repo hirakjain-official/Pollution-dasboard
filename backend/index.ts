@@ -7,7 +7,7 @@ import { createServer } from "http";
 import { connectDB } from "./db";
 import { startWeatherRefreshScheduler } from "./scheduler";
 
-console.log("Starting server...");
+console.log("Starting server... [Forced Restart for AI]");
 const app = express();
 
 const httpServer = createServer(app);

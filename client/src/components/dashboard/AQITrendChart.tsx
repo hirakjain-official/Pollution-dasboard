@@ -1,22 +1,26 @@
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
 import { Activity } from "lucide-react";
-import { generateTrendData } from "@/lib/utils";
 
 export function AQITrendChart({ wardId }: { wardId: string }) {
-    const data = useMemo(() => generateTrendData(wardId), [wardId]);
+    // Fetch live history from backend
+    const { data: history = [] } = useQuery({
+        queryKey: ["/api/history"],
+        refetchInterval: 30000 // Refresh every 30s to get the latest point
+    });
+
     return (
         <Card className="border shadow-sm">
             <CardHeader className="pb-2 pt-4 px-4">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                     <Activity className="w-4 h-4 text-muted-foreground" />
-                    AQI Trend (24 Hours)
+                    AQI Trend (Live History)
                 </CardTitle>
             </CardHeader>
             <CardContent className="px-2 pb-4">
                 <ResponsiveContainer width="100%" height={200}>
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <AreaChart data={history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                             <linearGradient id="pm10Gradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />

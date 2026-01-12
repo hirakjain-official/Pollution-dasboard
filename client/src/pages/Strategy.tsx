@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, Sparkles, LogOut, Target, TrendingUp, DollarSign, Calendar } from "lucide-react";
+import { ArrowLeft, Sparkles, LogOut, Target, TrendingUp, DollarSign, Calendar, Bot, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { OptimizationStrategyCard } from "@/components/dashboard/OptimizationStrategyCard";
 import { PolicySimulator } from "@/components/dashboard/PolicySimulator";
 import { LongTermGoals } from "@/components/dashboard/LongTermGoals";
@@ -11,9 +13,35 @@ import { ShiftPlanner } from "@/components/dashboard/ShiftPlanner";
 
 export default function Strategy() {
     const [, setLocation] = useLocation();
+    const [aiOpen, setAiOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [insight, setInsight] = useState<any>(null);
 
     const handleLogout = () => {
         setLocation("/");
+    };
+
+    const handleAskAI = async () => {
+        setAiOpen(true);
+        if (insight) return; // Don't refetch if already present
+
+        setLoading(true);
+        try {
+            const res = await fetch("/api/ai/strategy", {
+                method: "POST"
+            });
+            const data = await res.json();
+            setInsight(data);
+        } catch (e) {
+            console.error(e);
+            setInsight({
+                analysis: "AI Service Temporarily Unavailable. Please rely on manual charts.",
+                shortTermGoals: ["Maintain current AQI", "Monitor hotspots"],
+                longTermGoals: ["Evaluation pending"],
+                riskAssessment: "Unable to assess risk at this moment."
+            });
+        }
+        setLoading(false);
     };
 
     return (
@@ -36,6 +64,14 @@ export default function Strategy() {
                         </div>
                     </div>
                     <div className="flex items-center gap-4 ml-auto">
+                        <Button
+                            variant="outline"
+                            className="bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100 gap-2"
+                            onClick={handleAskAI}
+                        >
+                            <Bot className="w-4 h-4" />
+                            Ask AI Advisor
+                        </Button>
                         <Button variant="ghost" size="icon" title="Logout" onClick={handleLogout}>
                             <LogOut className="w-5 h-5" />
                         </Button>
@@ -107,6 +143,61 @@ export default function Strategy() {
                     </Tabs>
                 </div>
             </main>
+
+            {/* AI Advisor Dialog */}
+            <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-purple-700">
+                            <Bot className="w-6 h-6" />
+                            Strategic AI Advisor
+                        </DialogTitle>
+                        <DialogDescription>
+                            Real-time analysis of city-wide pollution metrics and policy impact.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {loading ? (
+                        <div className="py-12 flex flex-col items-center justify-center text-muted-foreground gap-4">
+                            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                            <p>Analyzing policy data...</p>
+                        </div>
+                    ) : insight ? (
+                        <div className="space-y-6 py-2">
+                            <div className="bg-purple-50 p-4 rounded-lg border border-purple-100 text-sm leading-relaxed text-slate-800">
+                                <h4 className="font-semibold text-purple-900 mb-2">Current Analysis</h4>
+                                {insight.analysis}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="border rounded-lg p-3">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Short Term</h4>
+                                    <ul className="list-disc list-inside text-sm space-y-1">
+                                        {insight.shortTermGoals?.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                                    </ul>
+                                </div>
+                                <div className="border rounded-lg p-3">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Long Term</h4>
+                                    <ul className="list-disc list-inside text-sm space-y-1">
+                                        {insight.longTermGoals?.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg border border-amber-100 text-amber-900 text-sm">
+                                <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-600" />
+                                <div>
+                                    <span className="font-bold">Risk Assessment:</span> {insight.riskAssessment}
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <DialogFooter>
+                        <Button onClick={() => setAiOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
