@@ -43,7 +43,7 @@ export function OptimizationStrategyCard() {
             </CardHeader>
             <CardContent className="px-4 pb-4 space-y-6">
 
-                {/* Input Inventory */}
+                {}
                 <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
@@ -78,7 +78,7 @@ export function OptimizationStrategyCard() {
                     </div>
                 </div>
 
-                {/* AI Output */}
+                {}
                 {allocation && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 space-y-4">
                         <div className="flex items-center justify-between">

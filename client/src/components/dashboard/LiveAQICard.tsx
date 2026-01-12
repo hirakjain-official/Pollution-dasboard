@@ -9,10 +9,10 @@ import { delhiWards } from "@/data/mockData";
 export function LiveAQICard({ ward }: { ward: WardData | null }) {
     const { data: apiWards = [], isLoading, error } = useQuery<any[]>({
         queryKey: ["/api/wards"],
-        refetchInterval: 30000 // Auto-refresh every 30 seconds
+        refetchInterval: 30000 
     });
 
-    // Debug: Log what we're getting from API
+    
     console.log("🔍 LiveAQICard - API response:", {
         apiWardsLength: apiWards?.length,
         firstWardPM25: apiWards?.[0]?.pm25,
@@ -22,16 +22,16 @@ export function LiveAQICard({ ward }: { ward: WardData | null }) {
 
     const wards = apiWards.length > 0 ? apiWards : delhiWards;
 
-    // If a specific ward is passed, use it. Otherwise, calculate Delhi average from API data.
+    
     const data = ward || (wards.length > 0 ? {
-        // Calculate averages from the wards array
+        
         pmLevel: Math.round(wards.reduce((a, w) => a + w.pmLevel, 0) / wards.length),
         pm25: Math.round(wards.reduce((a, w) => a + w.pm25, 0) / wards.length),
         riskIndex: Math.round(wards.reduce((a, w) => a + w.riskIndex, 0) / wards.length),
         humidity: Math.round(wards.reduce((a, w) => a + w.humidity, 0) / wards.length),
         temperature: Math.round(wards.reduce((a, w) => a + w.temperature, 0) / wards.length),
         windSpeed: Math.round(wards.reduce((a, w) => a + w.windSpeed, 0) / wards.length),
-    } : { // Default fallback if no data
+    } : { 
         pmLevel: 0, pm25: 0, riskIndex: 0, humidity: 0, temperature: 0, windSpeed: 0
     });
 

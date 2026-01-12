@@ -8,18 +8,18 @@ export function CitizenComplaintsCard({ selectedWard }: { selectedWard: string }
     const { data: wards = [] } = useQuery<any[]>({ queryKey: ["/api/wards"] });
     const { data: complaints = [] } = useQuery<any[]>({
         queryKey: ["/api/complaints"],
-        refetchInterval: 5000 // Refresh often to see new complaints
+        refetchInterval: 5000 
     });
 
     const filtered = selectedWard === "all"
         ? complaints
         : complaints.filter((c: any) => {
-            // Match ward ID or Name
+            
             const wardMatch = wards.find((w: any) => w.id === selectedWard);
             return c.ward === selectedWard || (wardMatch && c.ward === wardMatch.name);
         });
 
-    // Handle both new 'status' and old 'resolved' fields
+    
     const isPending = (c: any) => c.status === "pending" || (!c.status && !c.resolved);
     const unresolvedCount = filtered.filter(isPending).length;
 

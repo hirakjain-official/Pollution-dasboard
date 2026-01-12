@@ -23,7 +23,7 @@ interface ActionItem {
 }
 
 export function GovActionStatus() {
-    // Simulated live data - would come from API in production
+    
     const [actionStats, setActionStats] = useState({
         activeSprinklers: 47,
         totalSprinklers: 62,
@@ -34,11 +34,11 @@ export function GovActionStatus() {
         treePlanting: 156,
         complaintsResolved: 34,
         totalComplaints: 52,
-        avgResponseTime: 2.5, // hours
-        pollutionReduction: 12, // percentage
+        avgResponseTime: 2.5, 
+        pollutionReduction: 12, 
     });
 
-    // Simulate real-time updates
+    
     useEffect(() => {
         const interval = setInterval(() => {
             setActionStats(prev => ({
@@ -70,9 +70,9 @@ export function GovActionStatus() {
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                {/* Active Equipment Grid */}
+                {}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {/* Sprinklers */}
+                    {}
                     <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
                         <div className="flex items-center gap-2 mb-2">
                             <Droplets className="w-4 h-4 text-blue-600" />
@@ -85,7 +85,7 @@ export function GovActionStatus() {
                         <p className="text-[10px] text-blue-600 mt-1">{Math.round(sprinklerPercent)}% Active</p>
                     </div>
 
-                    {/* Water Tankers */}
+                    {}
                     <div className="p-3 rounded-lg bg-sky-50 border border-sky-100">
                         <div className="flex items-center gap-2 mb-2">
                             <Truck className="w-4 h-4 text-sky-600" />
@@ -98,7 +98,7 @@ export function GovActionStatus() {
                         <p className="text-[10px] text-sky-600 mt-1">{Math.round(tankerPercent)}% Deployed</p>
                     </div>
 
-                    {/* Dust Sweepers */}
+                    {}
                     <div className="p-3 rounded-lg bg-amber-50 border border-amber-100">
                         <div className="flex items-center gap-2 mb-2">
                             <svg className="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -113,7 +113,7 @@ export function GovActionStatus() {
                         <p className="text-[10px] text-amber-600 mt-1">{Math.round(sweeperPercent)}% Operating</p>
                     </div>
 
-                    {/* Trees Planted */}
+                    {}
                     <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
                         <div className="flex items-center gap-2 mb-2">
                             <TreePine className="w-4 h-4 text-emerald-600" />
@@ -124,9 +124,9 @@ export function GovActionStatus() {
                     </div>
                 </div>
 
-                {/* Response Metrics */}
+                {}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3 pt-2 border-t">
-                    {/* Complaint Resolution */}
+                    {}
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                         <div className="p-2 rounded-full bg-green-100">
                             <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -138,7 +138,7 @@ export function GovActionStatus() {
                         </div>
                     </div>
 
-                    {/* Avg Response Time */}
+                    {}
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                         <div className="p-2 rounded-full bg-orange-100">
                             <Clock className="w-4 h-4 text-orange-600" />
@@ -150,7 +150,7 @@ export function GovActionStatus() {
                         </div>
                     </div>
 
-                    {/* Pollution Reduction */}
+                    {}
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                         <div className="p-2 rounded-full bg-blue-100">
                             <TrendingDown className="w-4 h-4 text-blue-600" />
@@ -163,7 +163,7 @@ export function GovActionStatus() {
                     </div>
                 </div>
 
-                {/* Active Alerts */}
+                {}
                 <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
                     <div className="flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5" />
@@ -176,7 +176,7 @@ export function GovActionStatus() {
                     </div>
                 </div>
 
-                {/* Recent Actions Feed */}
+                {}
                 <div className="space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Actions</p>
                     <div className="space-y-1.5 max-h-[120px] overflow-y-auto">

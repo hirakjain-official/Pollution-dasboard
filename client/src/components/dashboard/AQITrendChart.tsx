@@ -4,10 +4,10 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 import { Activity } from "lucide-react";
 
 export function AQITrendChart({ wardId }: { wardId: string }) {
-    // Fetch live history from backend
+    
     const { data: history = [] } = useQuery({
         queryKey: ["/api/history"],
-        refetchInterval: 30000 // Refresh every 30s to get the latest point
+        refetchInterval: 30000 
     });
 
     return (

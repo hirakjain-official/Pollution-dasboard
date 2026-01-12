@@ -23,7 +23,7 @@ export default function Strategy() {
 
     const handleAskAI = async () => {
         setAiOpen(true);
-        if (insight) return; // Don't refetch if already present
+        if (insight) return; 
 
         setLoading(true);
         try {
@@ -46,7 +46,7 @@ export default function Strategy() {
 
     return (
         <div className="min-h-screen bg-slate-50/50">
-            {/* Strategy Header */}
+            {}
             <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-sm shadow-sm">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ export default function Strategy() {
 
             <main className="container mx-auto px-4 py-8">
                 <div className="flex flex-col gap-6">
-                    {/* Intro Section */}
+                    {}
                     <div className="flex justify-between items-end">
                         <div className="space-y-1">
                             <h2 className="text-2xl font-bold tracking-tight text-slate-900">Resource Deployment Planning</h2>
@@ -99,8 +99,8 @@ export default function Strategy() {
                         </div>
                     </div>
 
-                    {/* Main Grid Layout */}
-                    {/* Main Content Areas */}
+                    {}
+                    {}
                     <Tabs defaultValue="deployment" className="space-y-6">
                         <div className="flex items-center justify-between">
                             <TabsList className="grid w-full max-w-[400px] grid-cols-2">
@@ -109,15 +109,15 @@ export default function Strategy() {
                             </TabsList>
                         </div>
 
-                        {/* TAB 1: DEPLOYMENT OPERATIONS */}
+                        {}
                         <TabsContent value="deployment" className="space-y-6">
                             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                                {/* Left: Planner & Map (8 cols) */}
+                                {}
                                 <div className="xl:col-span-8 flex flex-col gap-6">
                                     <ShiftPlanner />
                                 </div>
 
-                                {/* Right: Inventory Allocator (4 cols) */}
+                                {}
                                 <div className="xl:col-span-4 flex flex-col gap-6">
                                     <OptimizationStrategyCard />
                                     <LongTermGoals />
@@ -125,7 +125,7 @@ export default function Strategy() {
                             </div>
                         </TabsContent>
 
-                        {/* TAB 2: IMPACT ANALYSIS */}
+                        {}
                         <TabsContent value="analysis" className="space-y-6">
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                 <PolicySimulator />
@@ -144,7 +144,7 @@ export default function Strategy() {
                 </div>
             </main>
 
-            {/* AI Advisor Dialog */}
+            {}
             <Dialog open={aiOpen} onOpenChange={setAiOpen}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>

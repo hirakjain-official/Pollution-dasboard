@@ -5,14 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Gauge, Droplets, Wind, Truck, TrendingDown } from "lucide-react";
 
 export function PolicySimulator() {
-    // Simulator Parameters (MCD Operations)
-    const [sweepingFreq, setSweepingFreq] = useState([2]); // times per day
-    const [sprinklerCoverage, setSprinklerCoverage] = useState([40]); // % coverage
-    const [smogGunHrs, setSmogGunHrs] = useState([4]); // hours active
+    
+    const [sweepingFreq, setSweepingFreq] = useState([2]); 
+    const [sprinklerCoverage, setSprinklerCoverage] = useState([40]); 
+    const [smogGunHrs, setSmogGunHrs] = useState([4]); 
 
-    // Simple impact calculation logic (mock)
+    
     const calculateImpact = () => {
-        // Sweeping helps 25%, Sprinkling 50%, Smog Guns 25% max
+        
         const sweepScore = (sweepingFreq[0] / 4) * 25;
         const sprinkleScore = (sprinklerCoverage[0] / 100) * 50;
         const gunScore = (smogGunHrs[0] / 12) * 25;
@@ -35,7 +35,7 @@ export function PolicySimulator() {
             </CardHeader>
             <CardContent className="space-y-8">
 
-                {/* Visual Feedback - AQI Gauge */}
+                {}
                 <div className="flex items-center justify-between bg-slate-50 p-4 rounded-xl border">
                     <div className="text-center">
                         <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Current Avg AQI</p>
@@ -55,7 +55,7 @@ export function PolicySimulator() {
                     </div>
                 </div>
 
-                {/* Controls */}
+                {}
                 <div className="space-y-6">
                     <div className="space-y-3">
                         <div className="flex justify-between">

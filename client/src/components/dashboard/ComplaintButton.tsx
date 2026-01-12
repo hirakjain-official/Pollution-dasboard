@@ -56,7 +56,7 @@ export function ComplaintButton() {
         e.preventDefault();
         console.log("📝 Submit clicked");
 
-        // Manual validation since we disabled HTML5 validation to avoid z-index issues
+        
         if (!formData.name || !formData.phone || !formData.ward || !formData.type || !formData.location || !formData.description) {
             alert("Please fill in all fields");
             return;
@@ -87,7 +87,7 @@ export function ComplaintButton() {
 
     const handleClose = () => {
         setOpen(false);
-        // Reset after close animation
+        
         setTimeout(() => {
             setSubmitted(false);
             setFormData({ name: "", phone: "", ward: "", type: "", location: "", description: "" });
@@ -117,7 +117,7 @@ export function ComplaintButton() {
                             </DialogDescription>
                         </DialogHeader>
 
-                        {/* Changed form to div to prevent any browser form behavior interference */}
+                        {}
                         <div className="space-y-4 mt-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">

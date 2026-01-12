@@ -10,7 +10,7 @@ import { updateLiveData } from "./services/liveDataService";
 import { getLiveWards, updateLiveWeatherData, addComplaint, getComplaints, getShiftPlan, generateAutoShiftPlan, getHistory } from "./services/inMemoryWeatherService";
 import { masterLLM } from "./services/masterLLM";
 
-// Import mock data for other endpoints
+
 import {
   citizenComplaints,
   actionHistory,
@@ -24,17 +24,17 @@ export async function registerRoutes(
 
   const isMongoConnected = () => mongoose.connection.readyState === 1;
 
-  // --- API Routes with in-memory weather data ---
+  
 
-  // Wards - Returns LIVE weather data (updated every 30s from OpenWeatherMap or simulated)
-  // ALWAYS use in-memory data for real-time updates
+  
+  
   app.get("/api/wards", async (req, res) => {
     const wards = getLiveWards();
     console.log(`📤 /api/wards returning ${wards.length} wards, first PM2.5=${wards[0]?.pm25}`);
     res.json(wards);
   });
 
-  // Hotspots - based on high PM wards
+  
   app.get("/api/hotspots", async (req, res) => {
     if (!isMongoConnected()) {
       const liveWards = getLiveWards();
@@ -54,7 +54,7 @@ export async function registerRoutes(
     res.json(hotspots);
   });
 
-  // Action Recommendations
+  
   app.get("/api/actions/recommendations", async (req, res) => {
     if (!isMongoConnected()) {
       return res.json(actionRecommendations);
@@ -63,7 +63,7 @@ export async function registerRoutes(
     res.json(actions);
   });
 
-  // Action History
+  
   app.get("/api/actions/history", async (req, res) => {
     if (!isMongoConnected()) {
       return res.json(actionHistory);
@@ -72,10 +72,10 @@ export async function registerRoutes(
     res.json(history);
   });
 
-  // Citizen Complaints
+  
   app.get("/api/complaints", async (req, res) => {
     if (!isMongoConnected()) {
-      // Combine mock complaints with real live complaints
+      
       const live = getComplaints();
       return res.json([...live, ...citizenComplaints]);
     }
@@ -84,7 +84,7 @@ export async function registerRoutes(
   });
 
   app.post("/api/complaints", async (req, res) => {
-    // 1. Analyze with Master LLM first
+    
     const analysis = await masterLLM.processQuery(
       `Analyze this complaint: "${req.body.description}". Location: ${req.body.ward}. Type: ${req.body.type}`,
       "complaint"
@@ -105,7 +105,7 @@ export async function registerRoutes(
     res.json(complaint);
   });
 
-  // Resources
+  
   app.get("/api/resources", async (req, res) => {
     if (!isMongoConnected()) {
       const mockResources = [
@@ -128,7 +128,7 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  // Shift Plans
+  
   app.get("/api/shifts", async (req, res) => {
     if (!isMongoConnected()) {
       const type = (req.query.type as string) || "morning";
@@ -141,7 +141,7 @@ export async function registerRoutes(
     res.json(plan || { message: "No plan found", routes: [] });
   });
 
-  // Auto-generate Shift Plan (AI/Simulated)
+  
   app.post("/api/shifts/auto-generate", async (req, res) => {
     const type = (req.body.type as string) || "morning";
     const plan = await generateAutoShiftPlan(type);
@@ -156,7 +156,7 @@ export async function registerRoutes(
     res.json(plan);
   });
 
-  // Contractors
+  
   app.get("/api/contractors", async (req, res) => {
     if (!isMongoConnected()) {
       const mockContractors = [
@@ -169,7 +169,7 @@ export async function registerRoutes(
     res.json(contractors);
   });
 
-  // Manual refresh endpoint
+  
   app.post("/api/wards/refresh", async (req, res) => {
     if (!isMongoConnected()) {
       const result = await updateLiveWeatherData();
@@ -193,7 +193,7 @@ export async function registerRoutes(
     }
   });
 
-  // Seed (MongoDB only)
+  
   app.post("/api/seed", async (req, res) => {
     if (!isMongoConnected()) {
       return res.status(503).json({
@@ -209,9 +209,9 @@ export async function registerRoutes(
     }
   });
 
-  // --- External Service Routes ---
+  
 
-  // Trigger Live Weather/AQI Update
+  
   app.post("/api/weather/live", async (req, res) => {
     const { lat, lng } = req.body;
     const targetLat = lat || 28.6139;
@@ -229,8 +229,8 @@ export async function registerRoutes(
     }
   });
 
-  // Generate AI Action Plan
-  // Generate AI Action Plan (Mission)
+  
+  
   app.post("/api/ai/plan", async (req, res) => {
     const { mission } = req.body;
     try {
@@ -245,7 +245,7 @@ export async function registerRoutes(
     }
   });
 
-  // Generate Strategy Insights (New)
+  
   app.post("/api/ai/strategy", async (req, res) => {
     try {
       const strategy = await masterLLM.processQuery(
@@ -259,7 +259,7 @@ export async function registerRoutes(
     }
   });
 
-  // History endpoint for Trend Chart
+  
   app.get("/api/history", (req, res) => {
     try {
       const history = getHistory();
@@ -270,7 +270,7 @@ export async function registerRoutes(
     }
   });
 
-  // Debug endpoint for Weather API
+  
   app.get("/api/debug/weather", async (req, res) => {
     try {
       const lat = 28.6139;

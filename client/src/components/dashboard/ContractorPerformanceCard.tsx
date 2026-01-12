@@ -23,9 +23,9 @@ export function ContractorPerformanceCard({ wardId }: ContractorPerformanceCardP
         );
     }
 
-    // Find contractor for the ward (assuming generic link or first one for demo if no specific mapping exists in backend yet, 
-    // but ideally we filter by ward. Since my backend contractor model has no wardId? 
-    // Wait, backend model 'Contractor' has 'assignedWards'.
+    
+    
+    
     const data = contractors.find((c: any) => c.assignedWards?.includes(wardId) || c.assignedWards?.includes("all")) || {
         name: "Allocated Contractor",
         manager: "N/A",
@@ -38,19 +38,19 @@ export function ContractorPerformanceCard({ wardId }: ContractorPerformanceCardP
         tasksPending: 0
     };
 
-    // Normalize data structure if API differs from local mock
+    
     const normalizedData = {
         name: data.name,
-        manager: "Site Manager", // Backend might not have manager field
+        manager: "Site Manager", 
         complianceScore: data.complianceScore || 85,
         status: data.complianceScore > 80 ? "good" : data.complianceScore > 60 ? "moderate" : "poor",
-        resources: { deployed: 10, total: 12 }, // Mock stats if missing
+        resources: { deployed: 10, total: 12 }, 
         tasks: { completed: data.tasksCompleted || 0, pending: data.tasksPending || 0 },
         violations: 0
     };
 
-    // Check if we use 'data' or 'normalizedData' below. 
-    // The original code used data.status etc. I will use normalizedData.
+    
+    
     const displayData = normalizedData;
 
     const statusColor =
@@ -79,7 +79,7 @@ export function ContractorPerformanceCard({ wardId }: ContractorPerformanceCardP
             </CardHeader>
             <CardContent className="px-4 py-4 space-y-5">
 
-                {/* Contractor Details */}
+                {}
                 <div className="flex items-center justify-between">
                     <div>
                         <h3 className="font-bold text-base text-slate-800">{displayData.name}</h3>
@@ -91,7 +91,7 @@ export function ContractorPerformanceCard({ wardId }: ContractorPerformanceCardP
                     </div>
                 </div>
 
-                {/* Progress Bar */}
+                {}
                 <div className="space-y-1.5">
                     <div className="flex justify-between text-xs">
                         <span className="text-muted-foreground">SLA Adherence</span>
@@ -100,7 +100,7 @@ export function ContractorPerformanceCard({ wardId }: ContractorPerformanceCardP
                     <Progress value={displayData.complianceScore} className={`h-2 [&>div]:${progressColor}`} />
                 </div>
 
-                {/* Start Stats Grid */}
+                {}
                 <div className="grid grid-cols-3 gap-2 pt-2">
                     <div className="bg-slate-50 p-2 rounded border text-center">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto mb-1" />

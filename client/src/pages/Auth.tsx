@@ -18,7 +18,7 @@ export default function Auth() {
         e.preventDefault();
         setLoading(true);
 
-        // Mock authentication
+        
         setTimeout(() => {
             if (username === "gov" && password === "gov") {
                 localStorage.setItem("authToken", "mock-token-gov");

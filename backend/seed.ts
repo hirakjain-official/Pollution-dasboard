@@ -1,11 +1,11 @@
 import { Ward, Hotspot, ActionRecommendation, ActionHistory, CitizenComplaint, Resource, ShiftPlan, Contractor } from "./models";
 
 export const seedDatabase = async () => {
-    // Check if data exists
+    
     const wardCount = await Ward.countDocuments();
     if (wardCount > 0) return { message: "Database already seeded" };
 
-    // Wards
+    
     const wards = [
         {
             id: "north", name: "North", color: "#fce7f3",
@@ -77,7 +77,7 @@ export const seedDatabase = async () => {
 
     await Ward.insertMany(wards);
 
-    // Hotspots
+    
     const hotspots = [
         { name: "Anand Vihar Bus Terminal", lat: 28.6469, lng: 77.3164, pmLevel: 342, type: "traffic", severity: "critical" },
         { name: "Mundka Industrial Area", lat: 28.6839, lng: 77.0315, pmLevel: 298, type: "industrial", severity: "critical" },

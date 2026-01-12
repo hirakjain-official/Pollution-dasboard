@@ -13,7 +13,7 @@ export function RefreshTimer() {
         console.log("🔄 Refreshing all data from API...");
 
         try {
-            // Force refetch ALL queries
+            
             await Promise.all([
                 queryClient.refetchQueries({ queryKey: ["/api/wards"], type: "active" }),
                 queryClient.refetchQueries({ queryKey: ["/api/hotspots"], type: "active" }),
@@ -22,7 +22,7 @@ export function RefreshTimer() {
                 queryClient.refetchQueries({ queryKey: ["/api/actions/history"], type: "active" }),
             ]);
 
-            // Update timestamp
+            
             const now = new Date();
             setLastUpdated(now.toLocaleTimeString());
             console.log("✅ All data refreshed at", now.toLocaleTimeString());
@@ -44,7 +44,7 @@ export function RefreshTimer() {
             });
         }, 1000);
 
-        // Initial fetch on mount
+        
         refreshAllData();
 
         return () => clearInterval(interval);
@@ -57,7 +57,7 @@ export function RefreshTimer() {
 
     return (
         <div className="flex items-center gap-3">
-            {/* Last Updated Time */}
+            {}
             {lastUpdated && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Clock className="w-3 h-3" />
@@ -65,7 +65,7 @@ export function RefreshTimer() {
                 </div>
             )}
 
-            {/* Countdown Timer */}
+            {}
             <div
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full cursor-pointer transition-all ${isRefreshing
                         ? 'bg-emerald-100 text-emerald-700 scale-105'

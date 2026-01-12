@@ -12,9 +12,9 @@ interface RouteDetailsDialogProps {
 export function RouteDetailsDialog({ route, open, onClose }: RouteDetailsDialogProps) {
     if (!route) return null;
 
-    // Simulate Start/End locations based on label or random logic
-    // Since we don't have reverse geocoding, we'll derive "sectors" or "wards" from the label
-    // default to generic locations if not found
+    
+    
+    
     const label = route.label || "Unit";
     const sectorMatch = label.match(/\((.*?)\)/);
     const sector = sectorMatch ? sectorMatch[1] : "Central Zone";
@@ -47,7 +47,7 @@ export function RouteDetailsDialog({ route, open, onClose }: RouteDetailsDialogP
                         </div>
 
                         <div className="space-y-3 relative">
-                            {/* Connector Line */}
+                            {}
                             <div className="absolute left-[11px] top-3 bottom-3 w-0.5 bg-slate-200" />
 
                             <div className="flex gap-3 relative z-10">

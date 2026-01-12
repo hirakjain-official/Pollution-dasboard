@@ -1,18 +1,18 @@
 import { Resource, ShiftPlan, Contractor, IResource, IShiftPlan, IContractor, IRoute } from "./models";
 
 export interface IStorage {
-  // Resources
+  
   getResources(): Promise<IResource[]>;
   updateResource(id: string, updates: Partial<IResource>): Promise<IResource | null>;
 
-  // Shift Plans
+  
   getShiftPlan(date: Date, type: string): Promise<IShiftPlan | null>;
   createShiftPlan(plan: Partial<IShiftPlan>): Promise<IShiftPlan>;
 
-  // Contractors
+  
   getContractors(): Promise<IContractor[]>;
 
-  // Users (Placeholder for now, keeping interface compatible if needed)
+  
   getUser(id: string): Promise<any | undefined>;
   getUserByUsername(username: string): Promise<any | undefined>;
 }
@@ -27,7 +27,7 @@ export class MongoStorage implements IStorage {
   }
 
   async getShiftPlan(date: Date, type: string): Promise<IShiftPlan | null> {
-    // Simple data matching for now, creating a range for the day
+    
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -49,11 +49,11 @@ export class MongoStorage implements IStorage {
   }
 
   async getUser(id: string): Promise<any | undefined> {
-    return undefined; // TODO: Implement User model if Auth is required
+    return undefined; 
   }
 
   async getUserByUsername(username: string): Promise<any | undefined> {
-    // Mock admin user for now to unblock login
+    
     if (username === 'gov') {
       return { id: 'gov', username: 'gov', password: 'gov' };
     }

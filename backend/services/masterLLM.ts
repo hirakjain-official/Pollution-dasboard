@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { getLiveWards } from "./inMemoryWeatherService";
 import { getComplaints } from "./inMemoryWeatherService";
 
-// Master LLM Service - The Central Brain of the Application
+
 export class MasterLLMService {
     private openai: OpenAI;
     private isConfigured: boolean;
@@ -11,7 +11,7 @@ export class MasterLLMService {
     constructor() {
         const apiKey = process.env.OPENROUTER_API_KEY;
         this.isConfigured = !!apiKey && apiKey !== "your_openrouter_api_key_here";
-        this.model = "openai/gpt-oss-120b:free"; // MANDATED MODEL
+        this.model = "openai/gpt-oss-120b:free"; 
 
         this.openai = new OpenAI({
             baseURL: "https://openrouter.ai/api/v1",
@@ -19,10 +19,7 @@ export class MasterLLMService {
         });
     }
 
-    /**
-     * The main entry point for all AI requests.
-     * Automatically injects global context (weather, pollution levels, etc.)
-     */
+    
     async processQuery(prompt: string, domain: "mission" | "complaint" | "strategy" | "general"): Promise<any> {
         const context = this.getGlobalContext();
         const systemPrompt = this.getSystemPrompt(domain, context);
@@ -48,17 +45,17 @@ export class MasterLLMService {
             return JSON.parse(content || "{}");
         } catch (error) {
             console.error("❌ Master LLM Failure:", error);
-            // Fallback to simulation on error
+            
             return this.runSimulation(domain, prompt, context);
         }
     }
 
     private getGlobalContext() {
-        // Gather live state from the application
+        
         const wards = getLiveWards();
         const complaints = getComplaints();
 
-        // Calculate aggregate metrics
+        
         const avgAQI = wards.reduce((acc, w) => acc + w.pmLevel, 0) / (wards.length || 1);
         const criticalWards = wards.filter(w => w.pmLevel > 200).map(w => w.name);
         const recentComplaints = complaints.slice(0, 5).map(c => `${c.type} in ${c.ward}`);
@@ -103,7 +100,7 @@ export class MasterLLMService {
     }
 
     private runSimulation(domain: string, prompt: string, context: any): any {
-        // High-Fidelity Simulation Logic
+        
         switch (domain) {
             case "mission":
                 return {
@@ -115,7 +112,7 @@ export class MasterLLMService {
                     teamInstructions: ["Focus on main roads", "Coordinate with traffic police"]
                 };
             case "complaint":
-                // Basic keyword analysis
+                
                 const isUrgent = prompt.toLowerCase().includes("fire") || prompt.toLowerCase().includes("burning");
                 return {
                     severity: isUrgent ? "High" : "Medium",
@@ -136,5 +133,5 @@ export class MasterLLMService {
     }
 }
 
-// Singleton instance
+
 export const masterLLM = new MasterLLMService();

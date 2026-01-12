@@ -2,10 +2,10 @@ import OpenAI from "openai";
 
 const API_KEY = process.env.OPENROUTER_API_KEY;
 
-// Initialize OpenAI client pointing to OpenRouter
+
 const openai = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
-    apiKey: API_KEY || "dummy-key", // Prevent crash if key is missing, but calls will fail
+    apiKey: API_KEY || "dummy-key", 
 });
 
 export async function generateActionPlan(wardName: string, aqi: number, resources: any) {
@@ -32,7 +32,7 @@ export async function generateActionPlan(wardName: string, aqi: number, resource
 
     try {
         const completion = await openai.chat.completions.create({
-            model: "openai/gpt-oss-20b:free", // Free tier model
+            model: "openai/gpt-oss-20b:free", 
             messages: [{ role: "user", content: prompt }],
             response_format: { type: "json_object" }
         });

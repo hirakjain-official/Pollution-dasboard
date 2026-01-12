@@ -28,7 +28,7 @@ interface HotspotMapProps {
     onRouteClick?: (route: any) => void;
 }
 
-// Map Controls Component
+
 function MapControls({ onZoomIn, onZoomOut, onCenter }: { onZoomIn: () => void; onZoomOut: () => void; onCenter: () => void }) {
     return (
         <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
@@ -45,7 +45,7 @@ function MapControls({ onZoomIn, onZoomOut, onCenter }: { onZoomIn: () => void; 
     );
 }
 
-// Map Controller for zoom actions
+
 function MapController({ zoomAction, centerAction }: { zoomAction: 'in' | 'out' | null; centerAction: boolean }) {
     const map = useMap();
 
@@ -102,7 +102,7 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
             </CardHeader>
 
             <div className={`relative ${className?.includes("min-h-") ? "h-full min-h-[inherit]" : "h-[350px]"}`}>
-                {/* Custom Map Controls */}
+                {}
                 <MapControls
                     onZoomIn={() => handleZoom('in')}
                     onZoomOut={() => handleZoom('out')}
@@ -119,7 +119,7 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
                     <MapController zoomAction={zoomAction} centerAction={centerAction} />
                     <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
 
-                    {/* Render Wards with hover effects */}
+                    {}
                     {validWards.map((ward: any) => {
                         const isHovered = hoveredWard === ward.id;
                         const isSelected = selectedWard === ward.id;
@@ -174,7 +174,7 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
                         );
                     })}
 
-                    {/* Render Hotspots with pulsing effect */}
+                    {}
                     {validHotspots.map((spot: any) => (
                         <CircleMarker
                             key={spot.id}
@@ -200,10 +200,10 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
                         </CircleMarker>
                     ))}
 
-                    {/* Main Route */}
+                    {}
                     {generatedPlan?.route && Array.isArray(generatedPlan.route) && generatedPlan.route.length > 0 && (
                         (() => {
-                            // Extra safety: Filter out any null/invalid points from the route
+                            
                             const safeRoute = generatedPlan.route.filter((p: any) => Array.isArray(p) && p.length >= 2 && typeof p[0] === 'number' && typeof p[1] === 'number');
 
                             if (safeRoute.length === 0) return null;
@@ -212,7 +212,7 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
                                 <>
                                     <Polyline
                                         positions={safeRoute as any}
-                                        pathOptions={{ color: '#0f172a', weight: 5, opacity: 0.9, dashArray: '10, 10' }} // Thicker for main
+                                        pathOptions={{ color: '#0f172a', weight: 5, opacity: 0.9, dashArray: '10, 10' }} 
                                         eventHandlers={{
                                             click: () => onRouteClick && onRouteClick({ label: "Main Route", ...generatedPlan })
                                         }}
@@ -232,34 +232,34 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
                         })()
                     )}
 
-                    {/* Additional Routes */}
+                    {}
                     {additionalRoutes && Array.isArray(additionalRoutes) && additionalRoutes.map((route: any, idx: number) => {
                         if (!route?.path || !Array.isArray(route.path) || route.path.length === 0) return null;
 
-                        // Extra safety filter for additional routes too
+                        
                         const safePath = route.path.filter((p: any) => Array.isArray(p) && p.length >= 2 && typeof p[0] === 'number' && typeof p[1] === 'number');
                         if (safePath.length === 0) return null;
 
-                        const isSprinkler = true; // Assume all additional routes are sprinklers for now
+                        const isSprinkler = true; 
                         const baseColor = route.color || '#3b82f6';
 
                         return (
                             <div key={idx}>
-                                { /* Invisible Click Target (Hit Box) */}
+                                { }
                                 <Polyline
                                     positions={safePath as any}
                                     pathOptions={{ color: 'transparent', weight: 20, opacity: 0 }}
                                     eventHandlers={{
                                         click: (e) => {
                                             if (onRouteClick) onRouteClick(route);
-                                            // e.target.openPopup(); // Optional: popup
+                                            
                                         },
-                                        mouseover: () => setHoveredWard(`route-${idx}`), // Hack to trigger hover state
+                                        mouseover: () => setHoveredWard(`route-${idx}`), 
                                         mouseout: () => setHoveredWard(null)
                                     }}
                                 />
 
-                                { /* Visible "Sprinkler" Route */}
+                                { }
                                 <Polyline
                                     positions={safePath as any}
                                     pathOptions={{
@@ -273,7 +273,7 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
                                     {route.label && <Popup className="font-semibold">{route.label}</Popup>}
                                 </Polyline>
 
-                                { /* Water Flow Effect (Lighter center) */}
+                                { }
                                 <Polyline
                                     positions={safePath as any}
                                     pathOptions={{
@@ -289,7 +289,7 @@ export function HotspotMap({ selectedWard, generatedPlan, additionalRoutes, clas
                 </MapContainer>
             </div>
 
-            {/* Legend */}
+            {}
             {showLegend && (
                 <div className="px-4 pb-3 pt-2 border-t bg-muted/30">
                     <div className="flex flex-wrap gap-4 text-[10px]">

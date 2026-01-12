@@ -70,7 +70,7 @@ export function ShiftPlanner() {
         const tableRows: any[] = [];
 
         Object.entries(SHIFT_PLANS).forEach(([shiftKey, plan]) => {
-            // Main Route
+            
             if (plan.route && plan.route.length > 0) {
                 tableRows.push([
                     plan.title,
@@ -81,7 +81,7 @@ export function ShiftPlanner() {
                 ]);
             }
 
-            // Extra Routes
+            
             plan.extraRoutes.forEach((route: any, idx: number) => {
                 tableRows.push([
                     plan.title,
@@ -93,7 +93,7 @@ export function ShiftPlanner() {
             });
         });
 
-        // @ts-ignore
+        
         autoTable(doc, {
             head: [['Shift', 'Route Name', 'Priority', 'Focus Area', 'Assigned Unit']],
             body: tableRows,
@@ -105,7 +105,7 @@ export function ShiftPlanner() {
         doc.save("daily-operations-plan.pdf");
     };
 
-    // Aggregate all routes for the 24-Hour Master View
+    
     const allRoutes = [
         ...(SHIFT_PLANS.morning.route && SHIFT_PLANS.morning.route.length ? [{ path: SHIFT_PLANS.morning.route, color: "#f97316", label: "Morning Main" }] : []),
         ...SHIFT_PLANS.morning.extraRoutes,
@@ -125,9 +125,9 @@ export function ShiftPlanner() {
                 fetch("/api/shifts/auto-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "evening" }) }),
                 fetch("/api/shifts/auto-generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "night" }) })
             ]);
-            // Invalidate queries to refresh map
+            
             queryClient.invalidateQueries({ queryKey: ["/api/shifts"] });
-            alert("AI Plan Generated Successfully! Map initialized.");
+            alert("Optimization Plan Generated Successfully! Map initialized.");
         } catch (e) {
             console.error(e);
             alert("Failed to generate plan. Ensure backend is running.");
@@ -158,7 +158,7 @@ export function ShiftPlanner() {
                             onClick={handleAutoPlan}
                         >
                             <Sparkles className="w-3 h-3" />
-                            AI Auto-Plan
+                            Auto-Generate Plan
                         </Button>
                         <Button
                             variant="outline"
@@ -174,7 +174,7 @@ export function ShiftPlanner() {
             </CardHeader>
             <CardContent className="p-4 space-y-6">
 
-                {/* Master 24-Hour Map */}
+                {}
                 <div className="space-y-2">
                     <div className="flex justify-between items-center">
                         <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
@@ -198,7 +198,7 @@ export function ShiftPlanner() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Morning Shift */}
+                    {}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -224,7 +224,7 @@ export function ShiftPlanner() {
                         </div>
                     </div>
 
-                    {/* Evening Shift */}
+                    {}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -250,7 +250,7 @@ export function ShiftPlanner() {
                         </div>
                     </div>
 
-                    {/* Night Shift */}
+                    {}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <h3 className="font-semibold text-sm flex items-center gap-2">
@@ -277,7 +277,7 @@ export function ShiftPlanner() {
                     </div>
                 </div>
 
-                {/* Route Details Dialog */}
+                {}
                 <Dialog open={!!activeRoute} onOpenChange={() => setActiveRoute(null)}>
                     <DialogContent className="max-w-md">
                         <DialogHeader>

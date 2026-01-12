@@ -29,16 +29,16 @@ function MetricCard({ title, value, icon: Icon, trend, color = "text-slate-600" 
 export function QuickStats({ selectedWard }: { selectedWard: string }) {
     const { data: apiWards = [] } = useQuery<any[]>({
         queryKey: ["/api/wards"],
-        refetchInterval: 30000 // Auto-refresh every 30 seconds
+        refetchInterval: 30000 
     });
     const wards = apiWards.length > 0 ? apiWards : delhiWards;
 
-    // Filter wards based on selection
+    
     const activeWards = selectedWard === "all"
         ? wards
         : wards.filter((w: any) => w.id === selectedWard);
 
-    // Calculate averages (safely handle empty array)
+    
     const avgPM25 = activeWards.length > 0
         ? Math.round(activeWards.reduce((acc: number, w: any) => acc + w.pm25, 0) / activeWards.length)
         : 0;

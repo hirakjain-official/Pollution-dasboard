@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-// --- Interfaces ---
+
 
 export interface IResource extends Document {
     name: string;
@@ -17,7 +17,7 @@ export interface IRouteStep {
 
 export interface IRoute {
     vehicleId: string;
-    path: [number, number][]; // Array of [lat, lng]
+    path: [number, number][]; 
     priority: 'High' | 'Standard';
     assignedTo: string;
 }
@@ -40,7 +40,7 @@ export interface IContractor extends Document {
     totalTasks: number;
 }
 
-// --- Schemas ---
+
 
 const ResourceSchema = new Schema<IResource>({
     name: { type: String, required: true },
@@ -78,16 +78,16 @@ const ContractorSchema = new Schema<IContractor>({
     totalTasks: { type: Number, default: 0 }
 });
 
-// --- Models ---
+
 
 export const Resource = mongoose.model<IResource>('Resource', ResourceSchema);
 export const ShiftPlan = mongoose.model<IShiftPlan>('ShiftPlan', ShiftPlanSchema);
 export const Contractor = mongoose.model<IContractor>('Contractor', ContractorSchema);
 
-// --- Extended Models for Dashboard ---
+
 
 export interface IWard extends Document {
-    id: string; // Keep string ID for now to match frontend 'north', 'south' etc if possible, or use _id
+    id: string; 
     name: string;
     color: string;
     coordinates: [number, number][];
@@ -99,7 +99,7 @@ export interface IWard extends Document {
     routesCount: number;
     routesNeedingAction: number;
     lastUpdated: string;
-    contractor: string; // Name or ID
+    contractor: string; 
     effectiveness: number;
     riskIndex: number;
     complaints: number;

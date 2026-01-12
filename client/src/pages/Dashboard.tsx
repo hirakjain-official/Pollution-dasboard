@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { delhiWards } from "@/data/mockData";
 
-// Dashboard Widgets
+
 import { QuickStats } from "@/components/dashboard/QuickStats";
 import { LiveAQICard } from "@/components/dashboard/LiveAQICard";
 import { AQITrendChart } from "@/components/dashboard/AQITrendChart";
@@ -22,23 +22,23 @@ export default function Dashboard() {
   const [selectedWard, setSelectedWard] = useState("all");
   const { data: apiWards = [] } = useQuery<any[]>({
     queryKey: ["/api/wards"],
-    refetchInterval: 30000 // Auto-refresh every 30 seconds
+    refetchInterval: 30000
   });
   const wards = apiWards.length > 0 ? apiWards : delhiWards;
 
   const currentWard = selectedWard === "all" ? null : wards.find((w: any) => w.id === selectedWard) || null;
 
   const { data: routePlan } = useQuery<any>({
-    queryKey: ["/api/shifts?type=morning"], // Default to morning for demo or could use time logic
+    queryKey: ["/api/shifts?type=morning"],
     refetchInterval: 60000
   });
 
-  /* equipment types for labels */
+
   const equipmentTypes = ["Anti-Smog Gun", "Mechanical Sweeper", "Water Sprinkler", "Mist Cannon"];
 
   const activeRoutes = routePlan?.routes?.map((r: any, i: number) => ({
     path: r.path,
-    color: "#3b82f6", // Default sprinkler blue
+    color: "#3b82f6",
     label: r.assignedTo || equipmentTypes[i % equipmentTypes.length]
   })) || [];
 
@@ -46,16 +46,21 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background" data-testid="dashboard">
-      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur-sm">
-        { /* ... header content ... */}
-        <div className="container mx-auto px-4 h-14 flex items-center gap-4">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-background/80 backdrop-blur-md shadow-sm">
+        { }
+        <div className="container mx-auto px-4 h-16 flex items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 ring-1 ring-white/20">
               <Megaphone className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-display font-bold leading-tight">Field Operations Command</h1>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Rapid Response Unit</p>
+              <h1 className="text-xl font-bold leading-tight tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Field Operations Command
+              </h1>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
+                Rapid Response Unit
+              </p>
             </div>
           </div>
           <div className="ml-6"><WardSelector selectedWard={selectedWard} onSelectWard={setSelectedWard} /></div>
@@ -90,13 +95,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Government Action Status - Full Width */}
+        { }
         <GovActionStatus />
 
-        {/* Correlation Analysis */}
+        { }
         <CorrelationAnalysisCard />
 
-        {/* Floating Complaint Button */}
+        { }
         <ComplaintButton />
       </main>
       <RouteDetailsDialog

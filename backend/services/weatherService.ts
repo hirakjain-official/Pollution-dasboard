@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API_KEY = process.env.OPENWEATHER_API_KEY;
 
-// Using HTTP instead of HTTPS as per user's working example
+
 const WEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5/weather";
 const AQI_BASE_URL = "http://api.openweathermap.org/data/2.5/air_pollution";
 
@@ -14,7 +14,7 @@ export interface WeatherData {
 }
 
 export interface AQIData {
-    aqi: number; // 1-5 scale from OpenWeather
+    aqi: number; 
     pm2_5: number;
     pm10: number;
 }
@@ -40,7 +40,7 @@ export async function fetchWeather(lat: number, lon: number): Promise<WeatherDat
         return {
             temp: Math.round(response.data.main.temp),
             humidity: response.data.main.humidity,
-            windSpeed: Math.round(response.data.wind.speed * 3.6), // Convert m/s to km/h
+            windSpeed: Math.round(response.data.wind.speed * 3.6), 
             conditions: response.data.weather[0].main,
         };
     } catch (error: any) {

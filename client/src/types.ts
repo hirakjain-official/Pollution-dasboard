@@ -25,7 +25,7 @@ export interface AQITrendPoint {
 }
 
 export interface Hotspot {
-    id: string; // or _id if from mongo
+    id: string; 
     name: string;
     lat: number;
     lng: number;
